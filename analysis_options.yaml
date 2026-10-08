@@ -1,6 +1,1 @@
-include: package:lints/recommended.yaml
-
-linter:
-  rules:
-    - prefer_const_constructors
-    - prefer_const_declarations
+include: package:flutter_lints/flutter.yaml
