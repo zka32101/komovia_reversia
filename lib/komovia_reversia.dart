@@ -7,6 +7,7 @@
 /// leaderboard, online matchmaking, following komovia_shogi's pattern).
 library;
 
+export 'src/onboarding_demo.dart';
 export 'src/reversia_board_painter.dart';
 export 'src/reversia_board_renderer.dart';
 export 'src/reversia_engine.dart';
