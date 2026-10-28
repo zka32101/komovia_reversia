@@ -1,10 +1,15 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 
+import 'firebase_options.dart';
 import 'services/onboarding_service.dart';
+import 'viewmodels/index.dart';
 import 'views/screens/onboarding_screen.dart';
 import 'views/screens/puzzle_screen.dart';
 
@@ -15,12 +20,22 @@ import 'views/screens/puzzle_screen.dart';
 /// social wiring" — see also `komovia_shogi`'s `main.dart` as the
 /// pattern this mirrors).
 ///
-/// No Firebase, no Riverpod, no social features yet — this app has no
-/// such dependency at all today (see pubspec.yaml), and the point of
-/// this first step is only to make the already-complete `Game`/`Engine`/
-/// `BoardRenderer` stack actually playable.
-void main() {
-  runApp(const KomoviaReversiaApp());
+/// Firebase/Riverpod are now wired in (this is the "Firebase social
+/// wiring" step from that priority order), with placeholder config
+/// (`firebase_options.dart`) until `flutterfire configure` is run against
+/// a real project — the point of this step is only to lay the same
+/// foundation komovia_shogi/komovia_go already had before their PvP
+/// features were built; no social/PvP screens exist yet.
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform);
+  } catch (_) {
+    // Placeholder Firebase config won't actually initialize against a real
+    // backend; swallow so the app still runs standalone.
+  }
+  runApp(const ProviderScope(child: KomoviaReversiaApp()));
 }
 
 class KomoviaReversiaApp extends StatelessWidget {
@@ -38,25 +53,37 @@ class KomoviaReversiaApp extends StatelessWidget {
 
 /// 初回起動時だけ`OnboardingScreen`を表示し、完了済み（または完了直後）
 /// なら`ReversiaGameScreen`へ進む — komovia_shogiの`_RootScreen`と同じ
-/// 役割だが、このアプリにはまだFirebase/サインインが無いため、その部分は
-/// 単純化している。
-class _RootScreen extends StatefulWidget {
+/// 役割。サインイン（匿名）はバックグラウンドで行い、オンボーディング・
+/// 対局自体はその完了を待たない（将来の社交/PvP機能が必要になった時点で
+/// uidを使えばよい）。
+class _RootScreen extends ConsumerStatefulWidget {
   const _RootScreen();
 
   @override
-  State<_RootScreen> createState() => _RootScreenState();
+  ConsumerState<_RootScreen> createState() => _RootScreenState();
 }
 
-class _RootScreenState extends State<_RootScreen> {
+class _RootScreenState extends ConsumerState<_RootScreen> {
   final _onboardingService = OnboardingService();
   bool? _hasCompletedOnboarding;
 
   @override
   void initState() {
     super.initState();
+    _ensureSignedIn();
     _onboardingService.hasCompletedOnboarding().then((completed) {
       if (mounted) setState(() => _hasCompletedOnboarding = completed);
     });
+  }
+
+  Future<void> _ensureSignedIn() async {
+    try {
+      if (FirebaseAuth.instance.currentUser == null) {
+        await ref.read(authServiceProvider).signInAnonymously();
+      }
+    } catch (_) {
+      // No real Firebase project configured yet.
+    }
   }
 
   void _onOnboardingFinished() {

@@ -1,0 +1,26 @@
+rules_version = '2';
+
+// komovia_reversia Firestore rules. Minimal skeleton for now — this app
+// has no social/PvP features yet (see main.dart's doc comment); only the
+// base `users/{uid}` profile doc is defined, following the exact
+// convention komovia_shogi/komovia_go use for every later feature's rules.
+// No Cloud Functions backend exists, so every write here is a direct
+// client write; rules restrict *who* can write, not *what* is true.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // ---------------- users/{uid} ----------------
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(uid);
+    }
+  }
+}
