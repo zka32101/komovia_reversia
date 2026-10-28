@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 
+import 'services/onboarding_service.dart';
+import 'views/screens/onboarding_screen.dart';
+
 /// komovia_reversia's app shell: a single local human-vs-AI game screen
 /// exercising `ReversiaGame`/`ReversiaEngine`/`ReversiaBoardRenderer` end
 /// to end, following the priority order in the package README ("app
@@ -27,8 +30,48 @@ class KomoviaReversiaApp extends StatelessWidget {
     return MaterialApp(
       title: 'Komovia Reversia',
       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal)),
-      home: const ReversiaGameScreen(),
+      home: const _RootScreen(),
     );
+  }
+}
+
+/// 初回起動時だけ`OnboardingScreen`を表示し、完了済み（または完了直後）
+/// なら`ReversiaGameScreen`へ進む — komovia_shogiの`_RootScreen`と同じ
+/// 役割だが、このアプリにはまだFirebase/サインインが無いため、その部分は
+/// 単純化している。
+class _RootScreen extends StatefulWidget {
+  const _RootScreen();
+
+  @override
+  State<_RootScreen> createState() => _RootScreenState();
+}
+
+class _RootScreenState extends State<_RootScreen> {
+  final _onboardingService = OnboardingService();
+  bool? _hasCompletedOnboarding;
+
+  @override
+  void initState() {
+    super.initState();
+    _onboardingService.hasCompletedOnboarding().then((completed) {
+      if (mounted) setState(() => _hasCompletedOnboarding = completed);
+    });
+  }
+
+  void _onOnboardingFinished() {
+    setState(() => _hasCompletedOnboarding = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final completed = _hasCompletedOnboarding;
+    if (completed == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (!completed) {
+      return OnboardingScreen(onFinished: _onOnboardingFinished);
+    }
+    return const ReversiaGameScreen();
   }
 }
 
