@@ -12,6 +12,7 @@ import 'services/onboarding_service.dart';
 import 'viewmodels/index.dart';
 import 'views/screens/onboarding_screen.dart';
 import 'views/screens/puzzle_screen.dart';
+import 'views/screens/reversia_matching_screen.dart';
 
 /// komovia_reversia's app shell: a single local human-vs-AI game screen
 /// exercising `ReversiaGame`/`ReversiaEngine`/`ReversiaBoardRenderer` end
@@ -224,6 +225,26 @@ class _ReversiaGameScreenState extends State<ReversiaGameScreen> {
       appBar: AppBar(
         title: const Text('Komovia Reversia'),
         actions: [
+          Consumer(
+            builder: (context, ref, _) {
+              final uid = ref.watch(currentUidProvider);
+              return IconButton(
+                icon: const Icon(Icons.group),
+                tooltip: '対局相手を探す',
+                onPressed: uid == null
+                    ? null
+                    : () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ReversiaMatchingScreen(
+                              uid: uid,
+                              displayName: 'Player ${uid.substring(0, 6)}',
+                            ),
+                          ),
+                        ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.calendar_today),
             tooltip: '今日の1局',
