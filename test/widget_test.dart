@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 import 'package:komovia_reversia/main.dart';
+import 'package:komovia_reversia/viewmodels/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Smoke test for the app shell added in this PR: the real
@@ -27,7 +29,12 @@ void main() {
   }
 
   testWidgets('shows the initial turn status and the board', (tester) async {
-    await tester.pumpWidget(const KomoviaReversiaApp());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [currentUidProvider.overrideWithValue(null)],
+        child: const KomoviaReversiaApp(),
+      ),
+    );
     await tester.pump(); // let hasCompletedOnboarding() resolve
     await tester.pump();
 
@@ -36,7 +43,12 @@ void main() {
   });
 
   testWidgets('tapping one of 先手\'s pieces then a legal destination moves it and triggers an AI reply', (tester) async {
-    await tester.pumpWidget(const KomoviaReversiaApp());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [currentUidProvider.overrideWithValue(null)],
+        child: const KomoviaReversiaApp(),
+      ),
+    );
     await tester.pump(); // let hasCompletedOnboarding() resolve
     await tester.pump();
 
@@ -59,7 +71,12 @@ void main() {
   });
 
   testWidgets('"新しい対局" resets to the initial position after moves have been played', (tester) async {
-    await tester.pumpWidget(const KomoviaReversiaApp());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [currentUidProvider.overrideWithValue(null)],
+        child: const KomoviaReversiaApp(),
+      ),
+    );
     await tester.pump(); // let hasCompletedOnboarding() resolve
     await tester.pump();
 
