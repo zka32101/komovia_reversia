@@ -17,10 +17,38 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    function isEither(a, b) {
+      return isSignedIn() && (request.auth.uid == a || request.auth.uid == b);
+    }
+
+    function onlyChanged(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
     // ---------------- users/{uid} ----------------
     match /users/{uid} {
       allow read: if isSignedIn();
       allow write: if isOwner(uid);
+    }
+
+    // ---------------- reversia_matchmaking_queue/{uid} ----------------
+    match /reversia_matchmaking_queue/{queueUid} {
+      // The whole queue is scanned client-side to find a candidate.
+      allow read: if isSignedIn();
+      allow create, delete: if isOwner(queueUid);
+      allow update: if isOwner(queueUid) ||
+        // ReversiaMatchingService.findMatch flips a candidate's own status.
+        (isSignedIn() && onlyChanged(['status']) &&
+         resource.data.status == 'waiting' && request.resource.data.status == 'matched');
+    }
+
+    // ---------------- reversia_match_results/{matchId} ----------------
+    match /reversia_match_results/{matchId} {
+      allow read: if isEither(resource.data.player1Uid, resource.data.player2Uid);
+      allow create: if isSignedIn() && request.resource.data.player1Uid == request.auth.uid;
+      allow update: if isEither(resource.data.player1Uid, resource.data.player2Uid) &&
+        onlyChanged(['gameId']);
+      allow delete: if false;
     }
   }
 }
