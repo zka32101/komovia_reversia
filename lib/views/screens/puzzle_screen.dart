@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
+
+import '../../viewmodels/index.dart';
 
 /// 「今日の1局」: `reversiaPuzzleForDate`で選ばれる、全プレイヤーが同じ日に
 /// 同じパズルを見る（Wordle的な）1日1題。すべてのパズルの解は
@@ -8,30 +11,45 @@ import 'package:komovia_reversia/komovia_reversia.dart';
 /// `reversia_puzzle_test.dart`で検証済みなので、UI側は「1手だけ入力させ、
 /// それが`solution.first`と一致するか」だけを見れば済む。
 ///
-/// README記載の優先順位（アプリ本体→オンボーディング→今日の1局UI→
-/// Firebase連携）の次の段取り - このアプリにはまだFirebase/Riverpod
-/// 依存が無いため、「解いたかどうか」の永続化・連続日数記録等は含めない
-/// （Firebase連携が入った後の話）。
-class PuzzleScreen extends StatefulWidget {
+/// サインイン済みであれば、挑戦結果を`ReversiaPuzzleLogService`で記録し
+/// 連続解答日数(streak)を表示する（best-effort - 失敗してもパズル自体は
+/// 遊べる。GoEnの`tsumeGoStreakProvider`と同じ役割）。
+class PuzzleScreen extends ConsumerStatefulWidget {
   const PuzzleScreen({super.key});
 
   @override
-  State<PuzzleScreen> createState() => _PuzzleScreenState();
+  ConsumerState<PuzzleScreen> createState() => _PuzzleScreenState();
 }
 
 enum _PuzzleOutcome { none, correct, incorrect }
 
-class _PuzzleScreenState extends State<PuzzleScreen> {
+class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
   final _game = ReversiaGame();
   final _renderer = ReversiaBoardRenderer();
   late final Puzzle<ReversiaPosition> _puzzle =
       reversiaPuzzleForDate(DateTime.now());
+  late final String _dateKey = formatReversiaPuzzleDateKey(DateTime.now());
 
   Square? _selected;
   List<Square> _hints = const [];
   _PuzzleOutcome _outcome = _PuzzleOutcome.none;
 
   BoardMove get _solutionMove => _puzzle.solution.single as BoardMove;
+
+  Future<void> _recordAttempt(bool correct) async {
+    final uid = ref.read(currentUidProvider);
+    if (uid == null) return;
+    try {
+      await ref.read(recordReversiaPuzzleAttemptProvider)(
+        uid: uid,
+        dateKey: _dateKey,
+        correct: correct,
+      );
+      ref.invalidate(reversiaPuzzleStreakProvider(uid));
+    } catch (_) {
+      // best-effort: パズル自体の結果表示はブロックしない
+    }
+  }
 
   void _reset() {
     setState(() {
@@ -60,18 +78,19 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
     }
 
     final attempted = BoardMove(from: _selected!, to: square);
+    final correct = attempted == _solutionMove;
     setState(() {
-      _outcome = attempted == _solutionMove
-          ? _PuzzleOutcome.correct
-          : _PuzzleOutcome.incorrect;
+      _outcome = correct ? _PuzzleOutcome.correct : _PuzzleOutcome.incorrect;
       _selected = null;
       _hints = const [];
     });
+    _recordAttempt(correct);
   }
 
   @override
   Widget build(BuildContext context) {
     final difficulty = _puzzle.metadata['difficultyLabel'] as String?;
+    final uid = ref.watch(currentUidProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('今日の1局')),
       body: SafeArea(
@@ -80,6 +99,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (uid != null) _StreakChip(uid: uid),
               Text(
                 difficulty == null ? 'キングを捕獲する一手を探しましょう' : '難易度: $difficulty',
                 style: Theme.of(context).textTheme.titleMedium,
@@ -129,6 +149,25 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _StreakChip extends ConsumerWidget {
+  const _StreakChip({required this.uid});
+
+  final String uid;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final streak = ref.watch(reversiaPuzzleStreakProvider(uid)).value;
+    if (streak == null || streak == 0) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Chip(
+        avatar: const Icon(Icons.local_fire_department, size: 18),
+        label: Text('$streak日連続'),
       ),
     );
   }

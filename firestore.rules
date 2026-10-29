@@ -118,5 +118,10 @@ service cloud.firestore {
     match /notifications/{uid}/notificationPreferences/{doc} {
       allow read, write: if isOwner(uid);
     }
+
+    // ---------------- reversia_puzzle_logs/{uid}/days/{dateKey} ----------------
+    match /reversia_puzzle_logs/{uid}/days/{dateKey} {
+      allow read, write: if isOwner(uid);
+    }
   }
 }

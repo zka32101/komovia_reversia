@@ -1,0 +1,73 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../models/reversia_puzzle_log.dart';
+import '../src/reversia_puzzle.dart';
+
+/// 「今日の1局」の挑戦記録・連続日数(streak)サービス。
+class ReversiaPuzzleLogService {
+  ReversiaPuzzleLogService(this._firestore);
+
+  final FirebaseFirestore _firestore;
+
+  /// 連続日数を計算する際にさかのぼる最大日数（GoEnの`getTsumeGoStreak`
+  /// と同じ上限。実際には最初に途切れた日で走査は止まるため、この上限
+  /// に達するのは1年間毎日解き続けた場合のみ）。
+  static const int maxStreakLookbackDays = 365;
+
+  DocumentReference<Map<String, dynamic>> _dayDoc(String uid, String dateKey) =>
+      _firestore
+          .collection('reversia_puzzle_logs')
+          .doc(uid)
+          .collection('days')
+          .doc(dateKey);
+
+  /// その日の挑戦を記録する。トランザクション内で読み取り・更新する
+  /// ことで、同じ日に複数回挑戦しても`attemptCount`が正しく加算され、
+  /// 一度`solved`になった日が後から`false`に戻ることはない。
+  Future<void> recordAttempt({
+    required String uid,
+    required String dateKey,
+    required bool correct,
+  }) {
+    final ref = _dayDoc(uid, dateKey);
+    return _firestore.runTransaction<void>((transaction) async {
+      final snapshot = await transaction.get(ref);
+      final current = ReversiaPuzzleLog.fromFirestore(uid, dateKey, snapshot);
+      final updated = ReversiaPuzzleLog(
+        uid: uid,
+        dateKey: dateKey,
+        solved: current.solved || correct,
+        attemptCount: current.attemptCount + 1,
+        solvedAt: current.solvedAt ?? (correct ? DateTime.now() : null),
+      );
+      transaction.set(ref, updated.toFirestore());
+    });
+  }
+
+  Future<ReversiaPuzzleLog?> getLog(String uid, String dateKey) async {
+    final doc = await _dayDoc(uid, dateKey).get();
+    if (!doc.exists) return null;
+    return ReversiaPuzzleLog.fromFirestore(uid, dateKey, doc);
+  }
+
+  /// [uid]の現在の連続解答日数。今日より前の日を1日ずつさかのぼり、
+  /// 「その日のドキュメントが存在し、solved==true」が途切れた時点で
+  /// 止める。今日まだ解いていなくても、前日までの連続は失われない
+  /// （今日という日がまだ「連続が途切れた日」として確定していないため）。
+  Future<int> getStreak(String uid) async {
+    var streak = 0;
+    for (var i = 0; i < maxStreakLookbackDays; i++) {
+      final date = DateTime.now().subtract(Duration(days: i));
+      final dateKey = formatReversiaPuzzleDateKey(date);
+      final log = await getLog(uid, dateKey);
+      if (log == null || !log.solved) {
+        // 今日(i==0)だけは、まだ挑戦していないだけで連続自体は途切れて
+        // いない可能性があるため、streakを0にせず単に数えないで続行する。
+        if (i == 0) continue;
+        break;
+      }
+      streak++;
+    }
+    return streak;
+  }
+}
