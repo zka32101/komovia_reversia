@@ -242,6 +242,75 @@ void main() {
     });
   });
 
+  group('undo', () {
+    testWidgets('undoes the player\'s move and the AI\'s reply, returning to the player\'s turn', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [currentUidProvider.overrideWithValue(null)],
+          child: const KomoviaReversiaApp(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await openGameFromHome(tester);
+
+      expect(find.byTooltip('待った'), findsOneWidget);
+      await tester.tap(find.byTooltip('待った'));
+      await tester.pump();
+      // 何も着手していない状態での待ったは何もしない。
+      expect(find.text('あなたの番です'), findsOneWidget);
+
+      await tester.tapAt(squareCenter(tester, 0, 0));
+      await tester.pump();
+      await tester.tapAt(squareCenter(tester, 0, 1));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('あなたの番です'), findsOneWidget);
+      final saved = await GameSaveService().loadInProgressGame();
+      expect(saved, isNotNull);
+
+      await tester.tap(find.byTooltip('待った'));
+      await tester.pump();
+
+      // 自分の着手とAIの応手の両方が取り消され、取り消し前と同じ初期
+      // 局面に戻って再び自分の番になる。
+      expect(find.text('あなたの番です'), findsOneWidget);
+      expect(await GameSaveService().loadInProgressGame(), isNull);
+    });
+
+    testWidgets('undo while the AI is still thinking cancels its reply', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [currentUidProvider.overrideWithValue(null)],
+          child: const KomoviaReversiaApp(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await openGameFromHome(tester);
+
+      await tester.tapAt(squareCenter(tester, 0, 0));
+      await tester.pump();
+      await tester.tapAt(squareCenter(tester, 0, 1));
+      await tester.pump();
+
+      expect(find.text('AIが考えています…'), findsOneWidget);
+      await tester.tap(find.byTooltip('待った'));
+      await tester.pump();
+
+      expect(find.text('あなたの番です'), findsOneWidget);
+      // AIの返信タイマーをキャンセルしているので、待っても何も起きない。
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('あなたの番です'), findsOneWidget);
+    });
+  });
+
   group('handicap', () {
     testWidgets('shows all handicap options and starts a fresh game on selection', (
       tester,
