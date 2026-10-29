@@ -2,13 +2,16 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:komovia_reversia/services/friend_service.dart';
 import 'package:komovia_reversia/services/leaderboard_service.dart';
 import 'package:komovia_reversia/services/notification_service.dart';
 import 'package:komovia_reversia/services/reversia_pvp_game_service.dart';
 import 'package:komovia_reversia/viewmodels/auth_provider.dart';
+import 'package:komovia_reversia/viewmodels/friend_provider.dart';
 import 'package:komovia_reversia/viewmodels/leaderboard_provider.dart';
 import 'package:komovia_reversia/viewmodels/notification_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_pvp_game_provider.dart';
+import 'package:komovia_reversia/views/screens/friends_screen.dart';
 import 'package:komovia_reversia/views/screens/home_screen.dart';
 import 'package:komovia_reversia/views/screens/leaderboard_screen.dart';
 import 'package:komovia_reversia/views/screens/puzzle_screen.dart';
@@ -37,6 +40,8 @@ void main() {
               .overrideWithValue(LeaderboardService(firestore: firestore)),
           reversiaPvpGameServiceProvider
               .overrideWithValue(ReversiaPvpGameService(firestore)),
+          friendServiceProvider
+              .overrideWithValue(FriendService(firestore: firestore)),
         ],
         child: MaterialApp(
           home: HomeScreen(onPlayReversia: onPlayReversia ?? () {}),
@@ -62,16 +67,18 @@ void main() {
 
     expect(find.text('対局相手を探す'), findsNothing);
     expect(find.text('対局中のPvP'), findsNothing);
+    expect(find.text('フレンド'), findsNothing);
     expect(find.byIcon(Icons.notifications), findsNothing);
   });
 
-  testWidgets('shows the matching/PvP-list tiles and notification bell when signed in', (
+  testWidgets('shows the matching/PvP-list/friends tiles and notification bell when signed in', (
     tester,
   ) async {
     await pumpHome(tester, uid: 'user1234');
 
     expect(find.text('対局相手を探す'), findsOneWidget);
     expect(find.text('対局中のPvP'), findsOneWidget);
+    expect(find.text('フレンド'), findsOneWidget);
     expect(find.byIcon(Icons.notifications), findsOneWidget);
   });
 
@@ -113,6 +120,16 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(ReversiaPvpGamesListScreen), findsOneWidget);
+  });
+
+  testWidgets('tapping フレンド opens FriendsScreen', (tester) async {
+    await pumpHome(tester, uid: 'user1234');
+
+    await tester.tap(find.text('フレンド'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(FriendsScreen), findsOneWidget);
   });
 
   testWidgets('tapping ランキング opens LeaderboardScreen', (tester) async {

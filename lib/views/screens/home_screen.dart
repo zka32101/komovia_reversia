@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../viewmodels/index.dart';
+import 'friends_screen.dart';
 import 'leaderboard_screen.dart';
 import 'notification_screen.dart';
 import 'puzzle_screen.dart';
@@ -106,6 +107,20 @@ class HomeScreen extends ConsumerWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => ReversiaPvpGamesListScreen(uid: uid),
+                ),
+              ),
+            ),
+            _HomeTile(
+              icon: Icons.people,
+              title: 'フレンド',
+              subtitle: 'フレンド申請・管理',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => FriendsScreen(
+                    uid: uid,
+                    displayName: 'Player ${uid.substring(0, 6)}',
+                  ),
                 ),
               ),
             ),
