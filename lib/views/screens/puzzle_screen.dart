@@ -40,12 +40,32 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
     final uid = ref.read(currentUidProvider);
     if (uid == null) return;
     try {
+      // その日の問題がまだ未解決かどうかを先に見ておく - 一度解いた後に
+      // リセットして再度正解しても、ランキングの`puzzlesSolved`を
+      // 二重に加算しないようにする（ログ自体の`solved`はログ側で
+      // 既に同じガードを持つが、こちらは別カウンターなので同じガードを
+      // ここでも行う必要がある）。
+      final existingLog = await ref
+          .read(reversiaPuzzleLogServiceProvider)
+          .getLog(uid, _dateKey);
+      final wasAlreadySolved = existingLog?.solved ?? false;
+
       await ref.read(recordReversiaPuzzleAttemptProvider)(
         uid: uid,
         dateKey: _dateKey,
         correct: correct,
       );
       ref.invalidate(reversiaPuzzleStreakProvider(uid));
+
+      if (correct && !wasAlreadySolved) {
+        final displayName = 'Player ${uid.substring(0, 6)}';
+        await ref.read(leaderboardServiceProvider).incrementStats(
+              uid: uid,
+              displayName: displayName,
+              puzzlesDelta: 1,
+            );
+        await ref.read(checkAndUnlockAchievementsProvider)(uid);
+      }
     } catch (_) {
       // best-effort: パズル自体の結果表示はブロックしない
     }

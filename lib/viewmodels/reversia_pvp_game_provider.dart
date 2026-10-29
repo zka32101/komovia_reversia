@@ -6,6 +6,7 @@ import 'package:komovia_core/komovia_core.dart';
 
 import '../models/reversia_pvp_game.dart';
 import '../services/reversia_pvp_game_service.dart';
+import 'achievement_provider.dart';
 import 'leaderboard_provider.dart';
 
 /// komovia_shogiの`shogi_pvp_game_provider.dart`と同じ役割（reversia向け）。
@@ -157,4 +158,8 @@ Future<void> _updateReversiaPvpEloRatings(Ref ref, ReversiaPvpGame game) async {
     gamesDelta: 1,
     winsDelta: secondScore == 1.0 ? 1 : 0,
   );
+
+  final checkAndUnlock = ref.read(checkAndUnlockAchievementsProvider);
+  if (firstScore == 1.0) await checkAndUnlock(game.firstUid);
+  if (secondScore == 1.0) await checkAndUnlock(game.secondUid);
 }

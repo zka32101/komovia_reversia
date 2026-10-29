@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
 
 import '../utils/reversia_rating.dart';
+import 'achievement_provider.dart';
 import 'auth_provider.dart';
 import 'leaderboard_provider.dart';
 
@@ -36,6 +37,9 @@ final updateReversiaRatingAfterGameProvider =
         gamesDelta: 1,
         winsDelta: won ? 1 : 0,
       );
+      if (won) {
+        await ref.read(checkAndUnlockAchievementsProvider)(uid);
+      }
     } catch (_) {
       // best-effort: 対局自体は常に続行できる
     }

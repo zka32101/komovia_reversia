@@ -222,5 +222,10 @@ service cloud.firestore {
         allow write: if isSignedIn();
       }
     }
+
+    // ---------------- achievements/{uid}/unlocked/{achievementId} ----------------
+    match /achievements/{uid}/unlocked/{achievementId} {
+      allow read, write: if isOwner(uid);
+    }
   }
 }
