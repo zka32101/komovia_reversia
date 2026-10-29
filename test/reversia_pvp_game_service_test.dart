@@ -392,5 +392,67 @@ void main() {
 
       expect(await service.getUserActiveGames('someone-else'), isEmpty);
     });
+
+    group('createGameForTournamentMatch', () {
+      test('creates an active game tagged with the tournament/match ids and attaches it to the match', () async {
+        final firestore = FakeFirebaseFirestore();
+        final service = ReversiaPvpGameService(firestore);
+        final matchRef = firestore
+            .collection('tournaments')
+            .doc('t1')
+            .collection('matches')
+            .doc('m1');
+        await matchRef.set({'round': 1, 'status': 'pending'});
+
+        final gameId = await service.createGameForTournamentMatch(
+          tournamentId: 't1',
+          matchId: 'm1',
+          firstUid: 'u1',
+          firstDisplayName: 'Alice',
+          secondUid: 'u2',
+          secondDisplayName: 'Bob',
+        );
+
+        final game = await service.getGame(gameId);
+        expect(game, isNotNull);
+        expect(game!.isActive, isTrue);
+        expect(game.tournamentId, 't1');
+        expect(game.tournamentMatchId, 'm1');
+
+        final matchDoc = await matchRef.get();
+        expect(matchDoc.data()?['gameId'], gameId);
+        expect(matchDoc.data()?['status'], 'in_progress');
+      });
+
+      test('returns the already-attached gameId instead of creating a second game', () async {
+        final firestore = FakeFirebaseFirestore();
+        final service = ReversiaPvpGameService(firestore);
+        final matchRef = firestore
+            .collection('tournaments')
+            .doc('t1')
+            .collection('matches')
+            .doc('m1');
+        await matchRef.set({'round': 1, 'status': 'pending'});
+
+        final first = await service.createGameForTournamentMatch(
+          tournamentId: 't1',
+          matchId: 'm1',
+          firstUid: 'u1',
+          firstDisplayName: 'Alice',
+          secondUid: 'u2',
+          secondDisplayName: 'Bob',
+        );
+        final second = await service.createGameForTournamentMatch(
+          tournamentId: 't1',
+          matchId: 'm1',
+          firstUid: 'u1',
+          firstDisplayName: 'Alice',
+          secondUid: 'u2',
+          secondDisplayName: 'Bob',
+        );
+
+        expect(second, first);
+      });
+    });
   });
 }

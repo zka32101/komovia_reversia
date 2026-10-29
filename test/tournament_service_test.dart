@@ -468,4 +468,58 @@ void main() {
       expect(matches.where((m) => m.round == 2), hasLength(2));
     });
   });
+
+  group('recordMatchResult without an explicit displayNames map', () {
+    test('derives next-round display names from the existing match documents', () async {
+      final t = await service.createTournament(
+        name: 'Test Cup',
+        description: '',
+        createdBy: 'u1',
+        startDate: DateTime(2026, 1, 1),
+        endDate: DateTime(2026, 1, 8),
+      );
+      await service.joinTournament(t.id, 'u2');
+      await service.joinTournament(t.id, 'u3');
+      await service.joinTournament(t.id, 'u4');
+      final displayNames = {
+        'u1': 'Alice',
+        'u2': 'Bob',
+        'u3': 'Carol',
+        'u4': 'Dave',
+      };
+      await service.startTournament(t.id, displayNames);
+      final round1 = await service.matchesStream(t.id).first;
+
+      // 呼び出し元(PvP対局終局フックなど)がdisplayNamesを省略しても、
+      // 既存の試合ドキュメントから両方の対戦相手の表示名を補完できる。
+      for (final m in round1) {
+        await service.recordMatchResult(t.id, m.id, m.player1Uid!);
+      }
+
+      final matches = await service.matchesStream(t.id).first;
+      final round2 = matches.where((m) => m.round == 2).toList();
+      expect(round2, hasLength(1));
+      expect(round2.single.player1DisplayName, isNotNull);
+      expect(round2.single.player2DisplayName, isNotNull);
+    });
+
+    test('completes the tournament with the correct winner when the final result omits displayNames', () async {
+      final t = await service.createTournament(
+        name: 'Test Cup',
+        description: '',
+        createdBy: 'u1',
+        startDate: DateTime(2026, 1, 1),
+        endDate: DateTime(2026, 1, 8),
+      );
+      await service.joinTournament(t.id, 'u2');
+      await service.startTournament(t.id, {'u1': 'Alice', 'u2': 'Bob'});
+      final round1 = await service.matchesStream(t.id).first;
+
+      await service.recordMatchResult(t.id, round1.single.id, 'u1');
+
+      final tournament = await service.getTournament(t.id);
+      expect(tournament!.isCompleted, isTrue);
+      expect(tournament.winnerId, 'u1');
+    });
+  });
 }
