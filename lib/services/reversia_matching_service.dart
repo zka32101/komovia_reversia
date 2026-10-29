@@ -1,10 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:komovia_core/komovia_core.dart';
 
 import '../models/reversia_matching.dart';
 
 /// 実力マッチングEngine。komovia_shogiの`ShogiMatchingService`と同じ
 /// 設計（候補選定はトランザクション外、成立の書き込みはトランザクション
-/// 内で候補者の状態を再確認してから行い、二重成立を防ぐ）。
+/// 内で候補者の状態を再確認してから行い、二重成立を防ぐ）。候補選定の
+/// アルゴリズム自体（レート差が最も近い相手を選ぶ）は`komovia_core`の
+/// `findBestMatchCandidate`に抽出済み - Firestoreの読み書き・
+/// トランザクションはcoreがFirestore非依存のため、ここに残している。
 class ReversiaMatchingService {
   ReversiaMatchingService(this._firestore);
 
@@ -50,23 +54,20 @@ class ReversiaMatchingService {
         .where('status', isEqualTo: 'waiting')
         .get();
 
-    ReversiaMatchmakingQueueEntry? bestCandidate;
-    int bestDiff = 1 << 30;
+    final entries = snapshots.docs.map(ReversiaMatchmakingQueueEntry.fromFirestore).toList();
+    final entriesByUid = {for (final e in entries) e.uid: e};
 
-    for (final doc in snapshots.docs) {
-      if (doc.id == uid) continue;
-      final entry = ReversiaMatchmakingQueueEntry.fromFirestore(doc);
-      final diff = (entry.rating - rating).abs();
-      if (diff <= maxRatingDiff && diff < bestDiff) {
-        bestCandidate = entry;
-        bestDiff = diff;
-      }
-    }
+    final bestCandidate = findBestMatchCandidate(
+      selfUid: uid,
+      selfRating: rating,
+      candidates: entries.map((e) => MatchCandidate(uid: e.uid, rating: e.rating)),
+      maxRatingDiff: maxRatingDiff,
+    );
 
     if (bestCandidate == null) return null;
 
-    final selectedCandidate = bestCandidate;
-    final selectedDiff = bestDiff;
+    final selectedCandidate = entriesByUid[bestCandidate.uid]!;
+    final selectedDiff = (selectedCandidate.rating - rating).abs();
     final selfRef = _firestore.collection('reversia_matchmaking_queue').doc(uid);
     final candidateRef =
         _firestore.collection('reversia_matchmaking_queue').doc(selectedCandidate.uid);
