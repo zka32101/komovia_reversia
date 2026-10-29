@@ -241,6 +241,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
   List<Square> _hints = const [];
   Move? _lastMove;
   bool _aiThinking = false;
+  bool _boardFlipped = false;
   Timer? _aiMoveTimer;
 
   GameResult get _result =>
@@ -759,6 +760,12 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
             onPressed: _pickBoardTheme,
           ),
           IconButton(
+            key: const Key('reversia_flip_board_button'),
+            icon: const Icon(Icons.flip),
+            tooltip: '盤面を反転',
+            onPressed: () => setState(() => _boardFlipped = !_boardFlipped),
+          ),
+          IconButton(
             icon: const Icon(Icons.balance),
             tooltip: 'ハンディキャップ',
             onPressed: _pickHandicap,
@@ -793,6 +800,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
                           ),
                           BoardSize(boardSize, boardSize),
                           _position,
+                          flipped: _boardFlipped,
                         );
                         if (square != null) _onTapSquare(square);
                       },
@@ -803,6 +811,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
                           lastMove: _lastMove,
                           hints: _hints,
                           selected: _selected,
+                          flipped: _boardFlipped,
                         ),
                       ),
                     );

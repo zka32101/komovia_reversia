@@ -92,5 +92,46 @@ void main() {
       expect(renderer.squareAt(const BoardOffset(-5, 10), boardSize, pos), isNull);
       expect(renderer.squareAt(const BoardOffset(1000, 10), boardSize, pos), isNull);
     });
+
+    test('flipped maps a top-left offset to the bottom-right square and vice versa', () {
+      final pos = game.initialPosition();
+      const boardSize = BoardSize(360, 360);
+
+      final topLeft = renderer.squareAt(
+        const BoardOffset(10, 10),
+        boardSize,
+        pos,
+        flipped: true,
+      );
+      expect(topLeft, const Square(5, 5));
+
+      final bottomRight = renderer.squareAt(
+        const BoardOffset(355, 355),
+        boardSize,
+        pos,
+        flipped: true,
+      );
+      expect(bottomRight, const Square(0, 0));
+    });
+  });
+
+  group('ReversiaBoardRenderer flipped build', () {
+    testWidgets('builds a flipped board without throwing', (tester) async {
+      final pos = game.initialPosition();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 360,
+                height: 360,
+                child: renderer.build(pos, flipped: true),
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    });
   });
 }
