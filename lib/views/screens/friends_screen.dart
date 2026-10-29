@@ -16,7 +16,7 @@ class FriendsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('フレンド'),
@@ -28,11 +28,19 @@ class FriendsScreen extends ConsumerWidget {
             ),
           ],
           bottom: const TabBar(
-            tabs: [Tab(text: 'フレンド'), Tab(text: '招待待ち')],
+            tabs: [
+              Tab(text: 'フレンド'),
+              Tab(text: '招待待ち'),
+              Tab(text: 'ブロック中'),
+            ],
           ),
         ),
         body: TabBarView(
-          children: [_buildFriendsTab(context, ref), _buildPendingTab(ref)],
+          children: [
+            _buildFriendsTab(context, ref),
+            _buildPendingTab(ref),
+            _buildBlockedTab(ref),
+          ],
         ),
       ),
     );
@@ -115,6 +123,26 @@ class FriendsScreen extends ConsumerWidget {
                       ref.read(rejectFriendRequestProvider)(uid, f.friendUid),
                   child: const Text('キャンセル'),
                 ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildBlockedTab(WidgetRef ref) {
+    final blocked = ref.watch(blockedFriendsStreamProvider(uid)).value ?? [];
+    if (blocked.isEmpty) {
+      return const Center(child: Text('ブロック中のフレンドはいません'));
+    }
+    return ListView(
+      children: blocked.map((f) {
+        return ListTile(
+          leading: const Icon(Icons.block, color: Colors.red),
+          title: Text(f.displayName),
+          trailing: TextButton(
+            onPressed: () =>
+                ref.read(unblockFriendProvider)(uid, f.friendUid),
+            child: const Text('ブロック解除'),
+          ),
         );
       }).toList(),
     );

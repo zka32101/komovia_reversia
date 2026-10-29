@@ -155,4 +155,44 @@ void main() {
     expect(await service.isBlocked('u2', 'u1'), isTrue);
     expect(await service.isBlocked('u1', 'nonexistent'), isFalse);
   });
+
+  test('blockedStream lists a blocked friend for the blocker', () async {
+    await service.sendRequest('u1', 'Alice', 'u2');
+    await service.acceptRequest('u2', 'u1');
+    await service.blockFriend('u1', 'u2');
+
+    final blocked = await service.blockedStream('u1').first;
+
+    expect(blocked, hasLength(1));
+    expect(blocked.single.friendUid, 'u2');
+    expect(blocked.single.displayName, 'Bob');
+  });
+
+  test('blockedStream also lists the other side, since they were blocked too', () async {
+    await service.sendRequest('u1', 'Alice', 'u2');
+    await service.acceptRequest('u2', 'u1');
+    await service.blockFriend('u1', 'u2');
+
+    final blocked = await service.blockedStream('u2').first;
+
+    expect(blocked, hasLength(1));
+    expect(blocked.single.friendUid, 'u1');
+  });
+
+  test('unblockFriend via blockedStream removes the entry from the list', () async {
+    await service.sendRequest('u1', 'Alice', 'u2');
+    await service.acceptRequest('u2', 'u1');
+    await service.blockFriend('u1', 'u2');
+
+    await service.unblockFriend('u1', 'u2');
+
+    expect(await service.blockedStream('u1').first, isEmpty);
+  });
+
+  test('blockedStream is empty with no blocked relationships', () async {
+    await service.sendRequest('u1', 'Alice', 'u2');
+    await service.acceptRequest('u2', 'u1');
+
+    expect(await service.blockedStream('u1').first, isEmpty);
+  });
 }
