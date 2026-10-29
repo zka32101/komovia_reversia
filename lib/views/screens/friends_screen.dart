@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../viewmodels/index.dart';
+import 'chat_screen.dart';
 
 /// フレンド画面 - komovia_shogiの`FriendsScreen`と同じ役割（reversia向け
 /// に日本語化）。「フレンド」「招待待ち」の2タブ構成で、`FriendService`
@@ -31,13 +32,13 @@ class FriendsScreen extends ConsumerWidget {
           ),
         ),
         body: TabBarView(
-          children: [_buildFriendsTab(ref), _buildPendingTab(ref)],
+          children: [_buildFriendsTab(context, ref), _buildPendingTab(ref)],
         ),
       ),
     );
   }
 
-  Widget _buildFriendsTab(WidgetRef ref) {
+  Widget _buildFriendsTab(BuildContext context, WidgetRef ref) {
     final friends = ref.watch(friendsStreamProvider(uid)).value ?? [];
     if (friends.isEmpty) {
       return const Center(child: Text('フレンドはまだいません'));
@@ -48,11 +49,30 @@ class FriendsScreen extends ConsumerWidget {
             (f) => ListTile(
               leading: const Icon(Icons.person),
               title: Text(f.displayName),
-              trailing: IconButton(
-                icon: const Icon(Icons.block),
-                tooltip: 'ブロック',
-                onPressed: () =>
-                    ref.read(blockFriendProvider)(uid, f.friendUid),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.message_outlined),
+                    tooltip: 'メッセージ',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ChatScreen(
+                          currentUid: uid,
+                          currentDisplayName: displayName,
+                          friendUid: f.friendUid,
+                          friendDisplayName: f.displayName,
+                        ),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.block),
+                    tooltip: 'ブロック',
+                    onPressed: () =>
+                        ref.read(blockFriendProvider)(uid, f.friendUid),
+                  ),
+                ],
               ),
             ),
           )

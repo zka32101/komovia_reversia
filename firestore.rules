@@ -21,6 +21,16 @@ service cloud.firestore {
       return isSignedIn() && (request.auth.uid == a || request.auth.uid == b);
     }
 
+    function isParticipant(ids) {
+      return isSignedIn() && request.auth.uid in ids;
+    }
+
+    // message_threads' participantUids is always exactly 2 fixed uids —
+    // see message_threads/{threadId}'s own match block below.
+    function otherParticipant(ids, uid) {
+      return ids[0] == uid ? ids[1] : ids[0];
+    }
+
     function onlyChanged(fields) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
     }
@@ -143,6 +153,50 @@ service cloud.firestore {
     // ---------------- reversia_puzzle_logs/{uid}/days/{dateKey} ----------------
     match /reversia_puzzle_logs/{uid}/days/{dateKey} {
       allow read, write: if isOwner(uid);
+    }
+
+    // ---------------- message_threads/{threadId} ----------------
+    // 1対1のフレンド間DM。threadIdは常に2者のuidをソートして連結した
+    // ものなので（DirectMessageService.threadIdFor）、participantUidsは
+    // スレッドの生存中ずっと固定の2要素配列 - komovia_chessの
+    // `firestore.rules`と同じ設計をそのまま使う。
+    match /message_threads/{threadId} {
+      allow read: if isParticipant(resource.data.participantUids);
+      allow create: if isSignedIn() &&
+        request.auth.uid in request.resource.data.participantUids &&
+        request.resource.data.participantUids.size() == 2;
+      // 送信とmarkThreadReadはどちらもこのmerge-setを通るため、2つの
+      // 正当な書き込み形だけを許可する: 既読化は自分自身の
+      // unreadCountエントリーを0にするだけ（相手のエントリーは不変）、
+      // 送信は自分をlastSenderUidにし、相手のunreadCountをちょうど
+      // +1する（自分のunreadCountは不変）。
+      allow update: if isParticipant(resource.data.participantUids) &&
+        request.resource.data.participantUids == resource.data.participantUids &&
+        (
+          (onlyChanged(['unreadCount']) &&
+            request.resource.data.unreadCount[request.auth.uid] == 0 &&
+            request.resource.data.unreadCount[otherParticipant(resource.data.participantUids, request.auth.uid)] ==
+              resource.data.unreadCount[otherParticipant(resource.data.participantUids, request.auth.uid)])
+          ||
+          (onlyChanged(['lastMessage', 'lastSenderUid', 'lastMessageAt', 'unreadCount', 'participantNames']) &&
+            request.resource.data.lastSenderUid == request.auth.uid &&
+            request.resource.data.unreadCount[request.auth.uid] == resource.data.unreadCount[request.auth.uid] &&
+            request.resource.data.unreadCount[otherParticipant(resource.data.participantUids, request.auth.uid)] ==
+              resource.data.unreadCount[otherParticipant(resource.data.participantUids, request.auth.uid)] + 1)
+        );
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        function threadParticipants() {
+          return get(/databases/$(database)/documents/message_threads/$(threadId)).data.participantUids;
+        }
+
+        allow read: if isParticipant(threadParticipants());
+        allow create: if isSignedIn() &&
+          request.auth.uid == request.resource.data.fromUid &&
+          isParticipant(threadParticipants());
+        allow update, delete: if false;
+      }
     }
   }
 }

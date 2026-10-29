@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../viewmodels/index.dart';
 import 'friends_screen.dart';
 import 'leaderboard_screen.dart';
+import 'message_threads_screen.dart';
 import 'notification_screen.dart';
 import 'puzzle_screen.dart';
 import 'reversia_matching_screen.dart';
@@ -63,6 +64,43 @@ class HomeScreen extends ConsumerWidget {
                   },
                 ),
               ],
+            ),
+          if (uid != null)
+            Builder(
+              builder: (context) {
+                final count = ref.watch(unreadMessageCountProvider);
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.mail_outline),
+                      tooltip: 'メッセージ',
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => MessageThreadsScreen(
+                            uid: uid,
+                            displayName: 'Player ${uid.substring(0, 6)}',
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (count > 0)
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: CircleAvatar(
+                          radius: 8,
+                          backgroundColor: Colors.red,
+                          child: Text(
+                            '$count',
+                            style: const TextStyle(fontSize: 10, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
         ],
       ),
