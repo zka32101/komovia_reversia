@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:komovia_reversia/services/daily_reminder_preferences.dart';
 import 'package:komovia_reversia/services/premium_entitlement_service.dart';
+import 'package:komovia_reversia/services/sound_feedback_preferences.dart';
+import 'package:komovia_reversia/utils/reversia_move_feedback.dart';
 import 'package:komovia_reversia/viewmodels/purchase_provider.dart';
 import 'package:komovia_reversia/views/screens/how_to_play_screen.dart';
 import 'package:komovia_reversia/views/screens/legal_document_screen.dart';
@@ -64,9 +66,25 @@ class _FakePreferences implements DailyReminderPreferencesLike {
   }
 }
 
+class _FakeSoundFeedbackPreferences implements SoundFeedbackPreferencesLike {
+  bool enabled;
+
+  _FakeSoundFeedbackPreferences({this.enabled = true});
+
+  @override
+  Future<bool> isEnabled() async => enabled;
+
+  @override
+  Future<void> setEnabled(bool value) async => enabled = value;
+}
+
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+  });
+
+  tearDown(() {
+    reversiaFeedbackEnabled = true;
   });
 
   Future<void> pumpSettings(
@@ -74,6 +92,7 @@ void main() {
     String? uid,
     LocalNotificationServiceLike? notificationService,
     DailyReminderPreferencesLike? preferences,
+    SoundFeedbackPreferencesLike? soundFeedbackPreferences,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -87,6 +106,8 @@ void main() {
             uid: uid,
             notificationService: notificationService ?? _FakeNotificationService(),
             preferences: preferences ?? _FakePreferences(),
+            soundFeedbackPreferences:
+                soundFeedbackPreferences ?? _FakeSoundFeedbackPreferences(),
           ),
         ),
       ),
@@ -180,7 +201,7 @@ void main() {
       preferences: prefs,
     );
 
-    await tester.tap(find.byType(SwitchListTile));
+    await tester.tap(find.widgetWithIcon(SwitchListTile, Icons.notifications_active_outlined));
     await tester.pumpAndSettle();
 
     expect(notificationService.scheduleCalls, 1);
@@ -199,13 +220,19 @@ void main() {
       preferences: prefs,
     );
 
-    await tester.tap(find.byType(SwitchListTile));
+    await tester.tap(find.widgetWithIcon(SwitchListTile, Icons.notifications_active_outlined));
     await tester.pumpAndSettle();
 
     expect(find.text('通知の許可が必要です'), findsOneWidget);
     expect(notificationService.scheduleCalls, 0);
     expect(prefs.enabled, false);
-    expect(find.text('オフ'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.widgetWithIcon(SwitchListTile, Icons.notifications_active_outlined),
+        matching: find.text('オフ'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('disabling the reminder cancels it', (tester) async {
@@ -218,12 +245,18 @@ void main() {
     );
     expect(find.text('通知時刻'), findsOneWidget);
 
-    await tester.tap(find.byType(SwitchListTile));
+    await tester.tap(find.widgetWithIcon(SwitchListTile, Icons.notifications_active_outlined));
     await tester.pumpAndSettle();
 
     expect(notificationService.cancelCalls, 1);
     expect(prefs.enabled, false);
-    expect(find.text('オフ'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.widgetWithIcon(SwitchListTile, Icons.notifications_active_outlined),
+        matching: find.text('オフ'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('通知時刻'), findsNothing);
   });
 
@@ -244,5 +277,45 @@ void main() {
     expect(notificationService.scheduleCalls, 1);
     expect(prefs.hour, notificationService.lastHour);
     expect(prefs.minute, notificationService.lastMinute);
+  });
+
+  testWidgets('shows the feedback toggle on by default', (tester) async {
+    await pumpSettings(tester);
+
+    expect(find.text('着手の効果音・バイブ'), findsOneWidget);
+    expect(find.text('オン'), findsOneWidget);
+  });
+
+  testWidgets('loads a previously-disabled feedback setting', (tester) async {
+    final feedbackPrefs = _FakeSoundFeedbackPreferences(enabled: false);
+    await pumpSettings(tester, soundFeedbackPreferences: feedbackPrefs);
+
+    expect(
+      find.descendant(
+        of: find.widgetWithIcon(SwitchListTile, Icons.volume_up_outlined),
+        matching: find.text('オフ'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('toggling feedback off persists it and updates the global flag', (
+    tester,
+  ) async {
+    final feedbackPrefs = _FakeSoundFeedbackPreferences();
+    await pumpSettings(tester, soundFeedbackPreferences: feedbackPrefs);
+
+    await tester.tap(find.widgetWithIcon(SwitchListTile, Icons.volume_up_outlined));
+    await tester.pumpAndSettle();
+
+    expect(feedbackPrefs.enabled, isFalse);
+    expect(reversiaFeedbackEnabled, isFalse);
+    expect(
+      find.descendant(
+        of: find.widgetWithIcon(SwitchListTile, Icons.volume_up_outlined),
+        matching: find.text('オフ'),
+      ),
+      findsOneWidget,
+    );
   });
 }
