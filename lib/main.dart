@@ -110,6 +110,11 @@ class _RootScreenState extends ConsumerState<_RootScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ストアに未確認応答のまま残っている購入を、割り込みが起きない
+    // アプリ起動のたびに回収できるよう、ホーム画面に進む前の全状態で
+    // watchしておく（GoEnの`purchaseRecoveryProvider`と同じ役割）。
+    ref.watch(purchaseRecoveryProvider);
+
     final completed = _hasCompletedOnboarding;
     if (completed == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));

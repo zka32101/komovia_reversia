@@ -6,6 +6,7 @@ import 'package:komovia_reversia/services/direct_message_service.dart';
 import 'package:komovia_reversia/services/friend_service.dart';
 import 'package:komovia_reversia/services/leaderboard_service.dart';
 import 'package:komovia_reversia/services/notification_service.dart';
+import 'package:komovia_reversia/services/premium_entitlement_service.dart';
 import 'package:komovia_reversia/services/reversia_pvp_game_service.dart';
 import 'package:komovia_reversia/services/tournament_service.dart';
 import 'package:komovia_reversia/viewmodels/auth_provider.dart';
@@ -13,6 +14,7 @@ import 'package:komovia_reversia/viewmodels/direct_message_provider.dart';
 import 'package:komovia_reversia/viewmodels/friend_provider.dart';
 import 'package:komovia_reversia/viewmodels/leaderboard_provider.dart';
 import 'package:komovia_reversia/viewmodels/notification_provider.dart';
+import 'package:komovia_reversia/viewmodels/purchase_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_pvp_game_provider.dart';
 import 'package:komovia_reversia/viewmodels/tournament_provider.dart';
 import 'package:komovia_reversia/views/screens/achievements_screen.dart';
@@ -53,6 +55,8 @@ void main() {
               .overrideWithValue(DirectMessageService(firestore: firestore)),
           tournamentServiceProvider
               .overrideWithValue(TournamentService(firestore: firestore)),
+          premiumEntitlementServiceProvider
+              .overrideWithValue(PremiumEntitlementService(firestore: firestore)),
         ],
         child: MaterialApp(
           home: HomeScreen(onPlayReversia: onPlayReversia ?? () {}),
@@ -203,5 +207,47 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(SettingsScreen), findsOneWidget);
+  });
+
+  testWidgets('shows no premium badge for a non-supporter', (tester) async {
+    await pumpHome(tester, uid: 'user1234');
+
+    expect(find.byIcon(Icons.workspace_premium), findsNothing);
+  });
+
+  testWidgets('shows a premium badge once a supporter entitlement is active', (
+    tester,
+  ) async {
+    final firestore = FakeFirebaseFirestore();
+    await PremiumEntitlementService(firestore: firestore).grantEntitlement(
+      uid: 'user1234',
+      plan: SubscriptionPlan.lifetime,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentUidProvider.overrideWithValue('user1234'),
+          notificationServiceProvider
+              .overrideWithValue(NotificationService(firestore: firestore)),
+          leaderboardServiceProvider
+              .overrideWithValue(LeaderboardService(firestore: firestore)),
+          reversiaPvpGameServiceProvider
+              .overrideWithValue(ReversiaPvpGameService(firestore)),
+          friendServiceProvider
+              .overrideWithValue(FriendService(firestore: firestore)),
+          directMessageServiceProvider
+              .overrideWithValue(DirectMessageService(firestore: firestore)),
+          tournamentServiceProvider
+              .overrideWithValue(TournamentService(firestore: firestore)),
+          premiumEntitlementServiceProvider
+              .overrideWithValue(PremiumEntitlementService(firestore: firestore)),
+        ],
+        child: MaterialApp(home: HomeScreen(onPlayReversia: () {})),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byIcon(Icons.workspace_premium), findsOneWidget);
   });
 }
