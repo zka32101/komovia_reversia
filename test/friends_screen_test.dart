@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:komovia_reversia/services/direct_message_service.dart';
 import 'package:komovia_reversia/services/friend_service.dart';
+import 'package:komovia_reversia/services/notification_service.dart';
 import 'package:komovia_reversia/viewmodels/direct_message_provider.dart';
 import 'package:komovia_reversia/viewmodels/friend_provider.dart';
+import 'package:komovia_reversia/viewmodels/notification_provider.dart';
 import 'package:komovia_reversia/views/screens/chat_screen.dart';
 import 'package:komovia_reversia/views/screens/friends_screen.dart';
 
@@ -23,6 +25,8 @@ void main() {
           friendServiceProvider.overrideWithValue(service),
           directMessageServiceProvider
               .overrideWithValue(DirectMessageService(firestore: firestore)),
+          notificationServiceProvider
+              .overrideWithValue(NotificationService(firestore: firestore)),
         ],
         child: MaterialApp(
           home: FriendsScreen(uid: uid, displayName: displayName),
