@@ -2,14 +2,78 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:komovia_reversia/services/daily_reminder_preferences.dart';
 import 'package:komovia_reversia/services/premium_entitlement_service.dart';
 import 'package:komovia_reversia/viewmodels/purchase_provider.dart';
 import 'package:komovia_reversia/views/screens/legal_document_screen.dart';
 import 'package:komovia_reversia/views/screens/paywall_screen.dart';
 import 'package:komovia_reversia/views/screens/settings_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _FakeNotificationService implements LocalNotificationServiceLike {
+  bool permissionGranted = true;
+  int scheduleCalls = 0;
+  int cancelCalls = 0;
+  int? lastHour;
+  int? lastMinute;
+
+  @override
+  Future<bool> requestPermission() async => permissionGranted;
+
+  @override
+  Future<void> scheduleDailyReminder({required int hour, required int minute}) async {
+    scheduleCalls++;
+    lastHour = hour;
+    lastMinute = minute;
+  }
+
+  @override
+  Future<void> cancelDailyReminder() async {
+    cancelCalls++;
+  }
+}
+
+class _FakePreferences implements DailyReminderPreferencesLike {
+  bool enabled;
+  int hour;
+  int minute;
+
+  _FakePreferences({
+    this.enabled = false,
+    this.hour = DailyReminderPreferences.defaultHour,
+    this.minute = DailyReminderPreferences.defaultMinute,
+  });
+
+  @override
+  Future<bool> isEnabled() async => enabled;
+
+  @override
+  Future<void> setEnabled(bool value) async => enabled = value;
+
+  @override
+  Future<int> getHour() async => hour;
+
+  @override
+  Future<int> getMinute() async => minute;
+
+  @override
+  Future<void> setTime(int newHour, int newMinute) async {
+    hour = newHour;
+    minute = newMinute;
+  }
+}
 
 void main() {
-  Future<void> pumpSettings(WidgetTester tester, {String? uid}) async {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  Future<void> pumpSettings(
+    WidgetTester tester, {
+    String? uid,
+    LocalNotificationServiceLike? notificationService,
+    DailyReminderPreferencesLike? preferences,
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -17,7 +81,13 @@ void main() {
             PremiumEntitlementService(firestore: FakeFirebaseFirestore()),
           ),
         ],
-        child: MaterialApp(home: SettingsScreen(uid: uid)),
+        child: MaterialApp(
+          home: SettingsScreen(
+            uid: uid,
+            notificationService: notificationService ?? _FakeNotificationService(),
+            preferences: preferences ?? _FakePreferences(),
+          ),
+        ),
       ),
     );
     await tester.pump();
@@ -71,5 +141,96 @@ void main() {
     );
     expect(screen.kind, LegalDocumentKind.termsOfService);
     expect(find.textContaining('本アプリの利用にあたり'), findsOneWidget);
+  });
+
+  testWidgets('shows the daily reminder off by default', (tester) async {
+    await pumpSettings(tester);
+
+    expect(find.text('デイリーリマインダー'), findsOneWidget);
+    expect(find.text('オフ'), findsOneWidget);
+    expect(find.text('通知時刻'), findsNothing);
+  });
+
+  testWidgets('loads a previously-enabled reminder and shows its time', (tester) async {
+    final prefs = _FakePreferences(enabled: true, hour: 8, minute: 30);
+    await pumpSettings(tester, preferences: prefs);
+
+    expect(find.text('毎日 8:30 に通知'), findsOneWidget);
+    expect(find.text('通知時刻'), findsOneWidget);
+  });
+
+  testWidgets('enabling the reminder requests permission and schedules it', (tester) async {
+    final notificationService = _FakeNotificationService();
+    final prefs = _FakePreferences();
+    await pumpSettings(
+      tester,
+      notificationService: notificationService,
+      preferences: prefs,
+    );
+
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
+
+    expect(notificationService.scheduleCalls, 1);
+    expect(notificationService.lastHour, DailyReminderPreferences.defaultHour);
+    expect(notificationService.lastMinute, DailyReminderPreferences.defaultMinute);
+    expect(prefs.enabled, true);
+    expect(find.text('毎日 19:00 に通知'), findsOneWidget);
+  });
+
+  testWidgets('shows a snackbar and stays off when permission is denied', (tester) async {
+    final notificationService = _FakeNotificationService()..permissionGranted = false;
+    final prefs = _FakePreferences();
+    await pumpSettings(
+      tester,
+      notificationService: notificationService,
+      preferences: prefs,
+    );
+
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
+
+    expect(find.text('通知の許可が必要です'), findsOneWidget);
+    expect(notificationService.scheduleCalls, 0);
+    expect(prefs.enabled, false);
+    expect(find.text('オフ'), findsOneWidget);
+  });
+
+  testWidgets('disabling the reminder cancels it', (tester) async {
+    final notificationService = _FakeNotificationService();
+    final prefs = _FakePreferences(enabled: true, hour: 9, minute: 0);
+    await pumpSettings(
+      tester,
+      notificationService: notificationService,
+      preferences: prefs,
+    );
+    expect(find.text('通知時刻'), findsOneWidget);
+
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
+
+    expect(notificationService.cancelCalls, 1);
+    expect(prefs.enabled, false);
+    expect(find.text('オフ'), findsOneWidget);
+    expect(find.text('通知時刻'), findsNothing);
+  });
+
+  testWidgets('picking a new time reschedules the reminder when enabled', (tester) async {
+    final notificationService = _FakeNotificationService();
+    final prefs = _FakePreferences(enabled: true, hour: 9, minute: 0);
+    await pumpSettings(
+      tester,
+      notificationService: notificationService,
+      preferences: prefs,
+    );
+
+    await tester.tap(find.text('通知時刻'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    expect(notificationService.scheduleCalls, 1);
+    expect(prefs.hour, notificationService.lastHour);
+    expect(prefs.minute, notificationService.lastMinute);
   });
 }
