@@ -6,6 +6,7 @@ export 'direct_message_provider.dart';
 export 'friend_provider.dart';
 export 'game_save_provider.dart';
 export 'leaderboard_provider.dart';
+export 'live_friends_provider.dart';
 export 'notification_provider.dart';
 export 'reversia_challenge_provider.dart';
 export 'reversia_growth_provider.dart';

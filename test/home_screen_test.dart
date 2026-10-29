@@ -23,6 +23,7 @@ import 'package:komovia_reversia/views/screens/achievements_screen.dart';
 import 'package:komovia_reversia/views/screens/friends_screen.dart';
 import 'package:komovia_reversia/views/screens/home_screen.dart';
 import 'package:komovia_reversia/views/screens/leaderboard_screen.dart';
+import 'package:komovia_reversia/views/screens/live_friends_screen.dart';
 import 'package:komovia_reversia/views/screens/message_threads_screen.dart';
 import 'package:komovia_reversia/views/screens/puzzle_screen.dart';
 import 'package:komovia_reversia/views/screens/reversia_matching_screen.dart';
@@ -117,10 +118,22 @@ void main() {
     expect(find.text('対局相手を探す'), findsOneWidget);
     expect(find.text('対局中のPvP'), findsOneWidget);
     expect(find.text('フレンド'), findsOneWidget);
-    expect(find.text('トーナメント'), findsOneWidget);
-    expect(find.text('実績'), findsOneWidget);
+    expect(find.text('ライブ観戦フレンド'), findsOneWidget);
     expect(find.byIcon(Icons.notifications), findsOneWidget);
     expect(find.byIcon(Icons.mail_outline), findsOneWidget);
+
+    // トーナメント/実績はリストが伸びたため既定のcacheExtent外にあり、
+    // スクロールしないとスライバーが要素を構築しない（findsOneWidgetは
+    // ツリーに存在するかどうかしか見ないため、オフスクリーンでも通常は
+    // 問題無いが、スライバーの遅延構築では未構築=未存在になる）。
+    await tester.scrollUntilVisible(
+      find.text('実績'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+    expect(find.text('トーナメント'), findsOneWidget);
+    expect(find.text('実績'), findsOneWidget);
   });
 
   testWidgets('tapping プレイ invokes onPlayReversia with resume: false', (tester) async {
@@ -208,6 +221,16 @@ void main() {
     expect(find.byType(FriendsScreen), findsOneWidget);
   });
 
+  testWidgets('tapping ライブ観戦フレンド opens LiveFriendsScreen', (tester) async {
+    await pumpHome(tester, uid: 'user1234');
+
+    await tester.tap(find.text('ライブ観戦フレンド'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(LiveFriendsScreen), findsOneWidget);
+  });
+
   testWidgets('tapping 実績 opens AchievementsScreen', (tester) async {
     await pumpHome(tester, uid: 'user1234');
 
@@ -227,6 +250,12 @@ void main() {
   testWidgets('tapping トーナメント opens TournamentScreen', (tester) async {
     await pumpHome(tester, uid: 'user1234');
 
+    await tester.scrollUntilVisible(
+      find.text('トーナメント'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
     await tester.tap(find.text('トーナメント'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));

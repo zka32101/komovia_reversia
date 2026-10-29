@@ -5,6 +5,7 @@ import '../../viewmodels/index.dart';
 import 'achievements_screen.dart';
 import 'friends_screen.dart';
 import 'leaderboard_screen.dart';
+import 'live_friends_screen.dart';
 import 'message_threads_screen.dart';
 import 'notification_screen.dart';
 import 'puzzle_screen.dart';
@@ -177,6 +178,17 @@ class HomeScreen extends ConsumerWidget {
                     uid: uid,
                     displayName: 'Player ${uid.substring(0, 6)}',
                   ),
+                ),
+              ),
+            ),
+            _HomeTile(
+              icon: Icons.live_tv,
+              title: 'ライブ観戦フレンド',
+              subtitle: 'いま対局中のフレンドを観戦する',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LiveFriendsScreen(uid: uid),
                 ),
               ),
             ),
