@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/daily_reminder_preferences.dart';
 import '../../services/local_notification_service.dart';
+import 'how_to_play_screen.dart';
 import 'legal_document_screen.dart';
 import 'paywall_screen.dart';
 
@@ -131,6 +132,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: _pickReminderTime,
               ),
           ],
+          ListTile(
+            leading: const Icon(Icons.help_outline),
+            title: const Text('遊び方'),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const HowToPlayScreen()),
+            ),
+          ),
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('プライバシーポリシー'),

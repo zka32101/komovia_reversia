@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:komovia_reversia/services/daily_reminder_preferences.dart';
 import 'package:komovia_reversia/services/premium_entitlement_service.dart';
 import 'package:komovia_reversia/viewmodels/purchase_provider.dart';
+import 'package:komovia_reversia/views/screens/how_to_play_screen.dart';
 import 'package:komovia_reversia/views/screens/legal_document_screen.dart';
 import 'package:komovia_reversia/views/screens/paywall_screen.dart';
 import 'package:komovia_reversia/views/screens/settings_screen.dart';
@@ -98,6 +99,17 @@ void main() {
 
     expect(find.text('プライバシーポリシー'), findsOneWidget);
     expect(find.text('利用規約'), findsOneWidget);
+  });
+
+  testWidgets('tapping 遊び方 opens the how-to-play screen', (tester) async {
+    await pumpSettings(tester);
+
+    expect(find.text('遊び方'), findsOneWidget);
+    await tester.tap(find.text('遊び方'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HowToPlayScreen), findsOneWidget);
+    expect(find.text('駒の表と裏'), findsOneWidget);
   });
 
   testWidgets('hides the premium entry when signed out', (tester) async {
