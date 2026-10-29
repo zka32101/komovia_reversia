@@ -22,6 +22,7 @@ import 'package:komovia_reversia/viewmodels/tournament_provider.dart';
 import 'package:komovia_reversia/views/screens/achievements_screen.dart';
 import 'package:komovia_reversia/views/screens/friends_screen.dart';
 import 'package:komovia_reversia/views/screens/home_screen.dart';
+import 'package:komovia_reversia/views/screens/growth_screen.dart';
 import 'package:komovia_reversia/views/screens/leaderboard_screen.dart';
 import 'package:komovia_reversia/views/screens/live_friends_screen.dart';
 import 'package:komovia_reversia/views/screens/message_threads_screen.dart';
@@ -211,6 +212,16 @@ void main() {
     expect(find.byType(ReversiaPvpGamesListScreen), findsOneWidget);
   });
 
+  testWidgets('tapping 成長の記録 opens GrowthScreen', (tester) async {
+    await pumpHome(tester, uid: 'user1234');
+
+    await tester.tap(find.text('成長の記録'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(GrowthScreen), findsOneWidget);
+  });
+
   testWidgets('tapping フレンド opens FriendsScreen', (tester) async {
     await pumpHome(tester, uid: 'user1234');
 
@@ -224,6 +235,12 @@ void main() {
   testWidgets('tapping ライブ観戦フレンド opens LiveFriendsScreen', (tester) async {
     await pumpHome(tester, uid: 'user1234');
 
+    await tester.scrollUntilVisible(
+      find.text('ライブ観戦フレンド'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
     await tester.tap(find.text('ライブ観戦フレンド'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
