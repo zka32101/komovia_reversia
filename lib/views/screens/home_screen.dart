@@ -31,7 +31,16 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Komovia Reversia'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Komovia Reversia'),
+            if (uid != null && ref.watch(isPremiumProvider)) ...[
+              const SizedBox(width: 6),
+              const Icon(Icons.workspace_premium, color: Colors.amber, size: 20),
+            ],
+          ],
+        ),
         actions: [
           if (uid != null)
             Stack(
@@ -205,7 +214,7 @@ class HomeScreen extends ConsumerWidget {
             subtitle: '利用規約・プライバシーポリシーなど',
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              MaterialPageRoute(builder: (_) => SettingsScreen(uid: uid)),
             ),
           ),
         ],

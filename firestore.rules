@@ -227,5 +227,14 @@ service cloud.firestore {
     match /achievements/{uid}/unlocked/{achievementId} {
       allow read, write: if isOwner(uid);
     }
+
+    // ---------------- premium_entitlements/{uid} ----------------
+    // 既知のクライアント信頼ギャップ: App Store/Playの領収書を検証する
+    // Cloud Functionsが無いため、クライアントが直接権限を書き込める
+    // （GoEnの`subscriptionActive`等と同じ、サーバーレス構成の正直な
+    // 限界として記録 - バグではない）。
+    match /premium_entitlements/{uid} {
+      allow read, write: if isOwner(uid);
+    }
   }
 }
