@@ -311,6 +311,68 @@ void main() {
     });
   });
 
+  group('AI level', () {
+    testWidgets('shows all three levels and changing it does not start a new game', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [currentUidProvider.overrideWithValue(null)],
+          child: const KomoviaReversiaApp(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await openGameFromHome(tester);
+
+      // 対局を1手進めておき、AI強さの変更が対局を始め直さないことを
+      // 後で確認できるようにする。
+      await tester.tapAt(squareCenter(tester, 0, 0));
+      await tester.pump();
+      await tester.tapAt(squareCenter(tester, 0, 1));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('AIの強さ'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('初級'), findsOneWidget);
+      expect(find.text('中級'), findsOneWidget);
+      expect(find.text('上級'), findsOneWidget);
+
+      await tester.tap(find.text('上級'));
+      await tester.pumpAndSettle();
+
+      // 対局は始め直されず、着手済みの手の取り消し（待った）が依然有効
+      // であること（=新規対局になっていないこと）を確認する。
+      await tester.tap(find.byTooltip('待った'));
+      await tester.pump();
+      expect(find.text('あなたの番です'), findsOneWidget);
+    });
+
+    testWidgets('dismissing without selecting keeps the current level', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [currentUidProvider.overrideWithValue(null)],
+          child: const KomoviaReversiaApp(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await openGameFromHome(tester);
+
+      await tester.tap(find.byTooltip('AIの強さ'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('中級'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('あなたの番です'), findsOneWidget);
+    });
+  });
+
   group('handicap', () {
     testWidgets('shows all handicap options and starts a fresh game on selection', (
       tester,

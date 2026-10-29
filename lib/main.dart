@@ -174,7 +174,12 @@ class _NewGameSaveService implements GameSaveServiceLike {
 }
 
 class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
-  static const _aiLevel = 2;
+  /// `ReversiaEngine.bestMove`は既にlevel引数を受け取っていたが、変更
+  /// できるUIがどこにも無かった（project-015からの移植漏れ - 競合
+  /// Othello/Reversiアプリの多くが標準機能として持つAI強さ選択）。
+  /// AIの強さは今後の着手にのみ影響するため、ハンディキャップと違って
+  /// 変更時に新規対局を始め直す必要は無い。
+  int _aiLevel = 2;
 
   final _game = ReversiaGame();
   final _engine = ReversiaEngine();
@@ -470,6 +475,32 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     _newGame();
   }
 
+  static const _aiLevelLabels = {1: '初級', 2: '中級', 3: '上級'};
+
+  /// AIの強さを選び直す。ハンディキャップと違い、今後の着手にのみ影響
+  /// するため新規対局として始め直す必要は無い（対局中に変更しても
+  /// 現在の局面・着手履歴と矛盾しない）。
+  Future<void> _pickAiLevel() async {
+    final selected = await showDialog<int>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('AIの強さ'),
+        children: [
+          for (final level in _aiLevelLabels.keys)
+            RadioListTile<int>(
+              title: Text(_aiLevelLabels[level]!),
+              value: level,
+              groupValue: _aiLevel,
+              onChanged: (v) => Navigator.pop(ctx, v),
+            ),
+        ],
+      ),
+    );
+    if (!mounted || selected == null) return;
+    setState(() => _aiLevel = selected);
+  }
+
   String get _statusText {
     final result = _result;
     if (result.isOngoing) {
@@ -574,6 +605,11 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
               context,
               MaterialPageRoute(builder: (_) => const PuzzleScreen()),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.smart_toy_outlined),
+            tooltip: 'AIの強さ',
+            onPressed: _pickAiLevel,
           ),
           IconButton(
             icon: const Icon(Icons.balance),
