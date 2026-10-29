@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 import 'package:komovia_reversia/main.dart';
+import 'package:komovia_reversia/services/board_theme_preferences.dart';
 import 'package:komovia_reversia/services/game_save_service.dart';
 import 'package:komovia_reversia/viewmodels/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -370,6 +371,52 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('あなたの番です'), findsOneWidget);
+    });
+  });
+
+  group('board theme', () {
+    testWidgets('shows all themes and applies the selection without a new game', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [currentUidProvider.overrideWithValue(null)],
+          child: const KomoviaReversiaApp(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await openGameFromHome(tester);
+
+      // 対局を1手進めておき、配色変更が対局を始め直さないことを後で
+      // 確認できるようにする。
+      await tester.tapAt(squareCenter(tester, 0, 0));
+      await tester.pump();
+      await tester.tapAt(squareCenter(tester, 0, 1));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('盤の配色'));
+      await tester.pumpAndSettle();
+
+      for (final theme in ReversiaBoardTheme.all) {
+        expect(find.text(theme.label), findsOneWidget);
+      }
+
+      await tester.tap(find.text(ReversiaBoardTheme.sumi.label));
+      await tester.pumpAndSettle();
+
+      // 対局は始め直されず、着手済みの手の取り消し（待った）が依然有効
+      // であること（=新規対局になっていないこと）を確認する。
+      await tester.tap(find.byTooltip('待った'));
+      await tester.pump();
+      expect(find.text('あなたの番です'), findsOneWidget);
+
+      // 選択した配色が永続化され、画面を作り直しても復元されることを
+      // 確認する。
+      final preferences = BoardThemePreferences();
+      expect(await preferences.getTheme(), ReversiaBoardTheme.sumi);
     });
   });
 

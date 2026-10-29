@@ -10,6 +10,7 @@ import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 
 import 'firebase_options.dart';
+import 'services/board_theme_preferences.dart';
 import 'services/game_save_service.dart';
 import 'services/onboarding_service.dart';
 import 'utils/reversia_move_feedback.dart';
@@ -141,17 +142,33 @@ class ReversiaGameScreen extends ConsumerStatefulWidget {
     super.key,
     this.resume = false,
     GameSaveServiceLike? saveService,
-  }) : saveService = saveService ?? const _NewGameSaveService();
+    BoardThemePreferencesLike? themePreferences,
+  })  : saveService = saveService ?? const _NewGameSaveService(),
+        themePreferences = themePreferences ?? const _NewBoardThemePreferences();
 
   /// trueなら、`GameSaveService`に保存された進行中の対局（あれば）を
   /// 初期局面から着手を再生して復元する。falseなら常に新規対局から
   /// 始める（既存の挙動そのまま）。
   final bool resume;
   final GameSaveServiceLike saveService;
+  final BoardThemePreferencesLike themePreferences;
 
   @override
   ConsumerState<ReversiaGameScreen> createState() =>
       _ReversiaGameScreenState();
+}
+
+/// `_NewGameSaveService`と同じ役割（constコンストラクタのデフォルト
+/// 引数用の薄いラッパー）。
+class _NewBoardThemePreferences implements BoardThemePreferencesLike {
+  const _NewBoardThemePreferences();
+
+  @override
+  Future<ReversiaBoardTheme> getTheme() => BoardThemePreferences().getTheme();
+
+  @override
+  Future<void> setTheme(ReversiaBoardTheme theme) =>
+      BoardThemePreferences().setTheme(theme);
 }
 
 /// `const`コンストラクタのデフォルト引数で使うための薄いラッパー -
@@ -183,7 +200,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
 
   final _game = ReversiaGame();
   final _engine = ReversiaEngine();
-  final _renderer = ReversiaBoardRenderer();
+  var _renderer = ReversiaBoardRenderer();
 
   /// 選択中のハンディキャップ（無しならnull）。`ReversiaHandicapRule`自体は
   /// komovia_coreの`HandicapRule`インターフェースを実装済みだったが、
@@ -221,6 +238,16 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     _position = _initialPosition;
     _historyKeys.add(_game.positionKey(_position));
     if (widget.resume) _loadSavedGame();
+    _loadBoardTheme();
+  }
+
+  /// 保存済みの配色テーマ（あれば）を読み込んで反映する。無ければ既定の
+  /// `ReversiaBoardTheme.classic`のまま（`ReversiaBoardRenderer()`の
+  /// デフォルト値と同じ）。
+  Future<void> _loadBoardTheme() async {
+    final theme = await widget.themePreferences.getTheme();
+    if (!mounted) return;
+    setState(() => _renderer = ReversiaBoardRenderer(theme: theme));
   }
 
   @override
@@ -501,6 +528,37 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     setState(() => _aiLevel = selected);
   }
 
+  /// 盤・駒の配色テーマを選び直す。局面には影響しないため新規対局として
+  /// 始め直す必要は無い（AIの強さと同じ考え方）。
+  Future<void> _pickBoardTheme() async {
+    final selected = await showDialog<ReversiaBoardTheme>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('盤の配色'),
+        children: [
+          for (final theme in ReversiaBoardTheme.all)
+            RadioListTile<ReversiaBoardTheme>(
+              title: Text(theme.label),
+              secondary: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _ColorSwatch(color: theme.lightSquare),
+                  _ColorSwatch(color: theme.darkSquare),
+                ],
+              ),
+              value: theme,
+              groupValue: _renderer.theme,
+              onChanged: (v) => Navigator.pop(ctx, v),
+            ),
+        ],
+      ),
+    );
+    if (!mounted || selected == null) return;
+    setState(() => _renderer = ReversiaBoardRenderer(theme: selected));
+    widget.themePreferences.setTheme(selected);
+  }
+
   String get _statusText {
     final result = _result;
     if (result.isOngoing) {
@@ -612,6 +670,11 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
             onPressed: _pickAiLevel,
           ),
           IconButton(
+            icon: const Icon(Icons.palette_outlined),
+            tooltip: '盤の配色',
+            onPressed: _pickBoardTheme,
+          ),
+          IconButton(
             icon: const Icon(Icons.balance),
             tooltip: 'ハンディキャップ',
             onPressed: _pickHandicap,
@@ -681,6 +744,27 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// `_pickBoardTheme`のダイアログで各テーマの明/暗マス色を小さく示す
+/// プレビュー用の四角。
+class _ColorSwatch extends StatelessWidget {
+  const _ColorSwatch({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 14,
+      height: 14,
+      margin: const EdgeInsets.only(left: 2),
+      decoration: BoxDecoration(
+        color: color,
+        border: Border.all(color: Colors.black26),
       ),
     );
   }

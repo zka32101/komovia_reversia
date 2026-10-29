@@ -10,6 +10,7 @@ library;
 export 'src/onboarding_demo.dart';
 export 'src/reversia_board_painter.dart';
 export 'src/reversia_board_renderer.dart';
+export 'src/reversia_board_theme.dart';
 export 'src/reversia_engine.dart';
 export 'src/reversia_evaluator.dart';
 export 'src/reversia_game.dart';

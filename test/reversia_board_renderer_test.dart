@@ -53,6 +53,28 @@ void main() {
     });
   });
 
+  group('ReversiaBoardRenderer theme', () {
+    testWidgets('builds without throwing for every theme', (tester) async {
+      final pos = game.initialPosition();
+      for (final theme in ReversiaBoardTheme.all) {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 360,
+                  height: 360,
+                  child: ReversiaBoardRenderer(theme: theme).build(pos),
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(tester.takeException(), isNull);
+      }
+    });
+  });
+
   group('ReversiaBoardRenderer.squareAt', () {
     test('maps an offset inside the board to the right square', () {
       final pos = game.initialPosition();
