@@ -10,6 +10,7 @@ import 'package:komovia_reversia/komovia_reversia.dart';
 import 'firebase_options.dart';
 import 'services/onboarding_service.dart';
 import 'viewmodels/index.dart';
+import 'views/screens/leaderboard_screen.dart';
 import 'views/screens/onboarding_screen.dart';
 import 'views/screens/puzzle_screen.dart';
 import 'views/screens/reversia_matching_screen.dart';
@@ -109,14 +110,17 @@ class _RootScreenState extends ConsumerState<_RootScreen> {
 /// [Side.second]. Tap a piece to select it (legal destinations
 /// highlight), tap a destination to move; the AI replies automatically
 /// after a short delay once the position is its turn.
-class ReversiaGameScreen extends StatefulWidget {
+class ReversiaGameScreen extends ConsumerStatefulWidget {
   const ReversiaGameScreen({super.key});
 
   @override
-  State<ReversiaGameScreen> createState() => _ReversiaGameScreenState();
+  ConsumerState<ReversiaGameScreen> createState() =>
+      _ReversiaGameScreenState();
 }
 
-class _ReversiaGameScreenState extends State<ReversiaGameScreen> {
+class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
+  static const _aiLevel = 2;
+
   final _game = ReversiaGame();
   final _engine = ReversiaEngine();
   final _renderer = ReversiaBoardRenderer();
@@ -165,6 +169,10 @@ class _ReversiaGameScreenState extends State<ReversiaGameScreen> {
       _selected = null;
       _hints = const [];
     });
+    final result = _result;
+    if (!result.isOngoing) {
+      ref.read(updateReversiaRatingAfterGameProvider)(result, _aiLevel);
+    }
     _maybeScheduleAiMove();
   }
 
@@ -173,7 +181,7 @@ class _ReversiaGameScreenState extends State<ReversiaGameScreen> {
     if (_position.sideToMove != Side.second) return;
     setState(() => _aiThinking = true);
     _aiMoveTimer = Timer(const Duration(milliseconds: 400), () async {
-      final move = await _engine.bestMove(_position, level: 2);
+      final move = await _engine.bestMove(_position, level: _aiLevel);
       if (!mounted) return;
       setState(() => _aiThinking = false);
       if (move != null) _applyMove(move);
@@ -244,6 +252,14 @@ class _ReversiaGameScreenState extends State<ReversiaGameScreen> {
                         ),
               );
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.leaderboard),
+            tooltip: 'ランキング',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.calendar_today),

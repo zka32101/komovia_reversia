@@ -63,5 +63,16 @@ service cloud.firestore {
         onlyChanged(['movesRecord', 'isFirstTurn', 'movesCount', 'status', 'winnerUid', 'result', 'updatedAt']);
       allow delete: if false;
     }
+
+    // ---------------- leaderboards/{period}/{type}/{uid} ----------------
+    match /leaderboards/{period}/{type}/{uid} {
+      allow read: if isSignedIn();
+      // PvP game results update the Elo rating of BOTH players
+      // (reversia_pvp_game_provider.dart's _updateReversiaPvpEloRatings),
+      // so this can't be restricted to isOwner(uid) — same documented
+      // client-trust tradeoff as komovia_go's identical rule (no Cloud
+      // Functions backend exists to verify self-reported outcomes yet).
+      allow write: if isSignedIn();
+    }
   }
 }
