@@ -136,6 +136,41 @@ class ReversiaPvpGameService {
     });
   }
 
+  /// 相手が長期間応答していない（`updatedAt`からこの期間が経過している）
+  /// 対局を、放置勝ちとして終局させる。komovia_goの`PvpGameService.
+  /// claimAbandonmentForfeit`と同じ役割・同じ閾値 - 「NO TIMERS」方針
+  /// （対局中に時間制限を課さない）とは別物で、何日も現実に動きが無い
+  /// 対局を永久に「進行中」で残さないための救済措置。
+  static const Duration abandonmentThreshold = Duration(hours: 48);
+
+  /// トランザクション内で読み取り・判定・書き込みを行うため、
+  /// applyMove/resignと同時に呼ばれても後勝ちで結果が上書きされない。
+  Future<void> claimAbandonmentForfeit({
+    required String gameId,
+    required String claimantUid,
+  }) {
+    return _firestore.runTransaction<void>((transaction) async {
+      final docRef = _games.doc(gameId);
+      final snapshot = await transaction.get(docRef);
+      if (!snapshot.exists) return;
+
+      final pvp = ReversiaPvpGame.fromFirestore(snapshot);
+      if (!pvp.canClaimAbandonmentForfeit(
+        claimantUid,
+        threshold: abandonmentThreshold,
+      )) {
+        return;
+      }
+
+      transaction.update(docRef, {
+        'status': 'finished',
+        'winnerUid': claimantUid,
+        'result': 'forfeit',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
   /// 投了する。非対局者・終局済みであれば何もしない。
   Future<void> resign({required String gameId, required String uid}) {
     return _firestore.runTransaction<void>((transaction) async {

@@ -73,6 +73,105 @@ void main() {
     });
   });
 
+  group('canClaimAbandonmentForfeit', () {
+    ReversiaPvpGame gameWith({
+      required DateTime? updatedAt,
+      required DateTime createdAt,
+      String status = 'active',
+      bool isFirstTurn = false,
+    }) {
+      return ReversiaPvpGame(
+        id: 'g1',
+        firstUid: 'first-uid',
+        firstDisplayName: 'Alice',
+        secondUid: 'second-uid',
+        secondDisplayName: 'Bob',
+        isFirstTurn: isFirstTurn,
+        movesCount: 1,
+        status: status,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+      );
+    }
+
+    test('true for the waiting player once the threshold has elapsed', () {
+      final game = gameWith(
+        createdAt: DateTime.now().subtract(const Duration(hours: 50)),
+        updatedAt: DateTime.now().subtract(const Duration(hours: 49)),
+        isFirstTurn: false, // it's second-uid's turn; first-uid is waiting
+      );
+
+      expect(
+        game.canClaimAbandonmentForfeit('first-uid', threshold: const Duration(hours: 48)),
+        isTrue,
+      );
+    });
+
+    test('false before the threshold has elapsed', () {
+      final game = gameWith(
+        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+        updatedAt: DateTime.now().subtract(const Duration(hours: 1)),
+        isFirstTurn: false,
+      );
+
+      expect(
+        game.canClaimAbandonmentForfeit('first-uid', threshold: const Duration(hours: 48)),
+        isFalse,
+      );
+    });
+
+    test('false for the player whose own turn it currently is', () {
+      final game = gameWith(
+        createdAt: DateTime.now().subtract(const Duration(hours: 50)),
+        updatedAt: DateTime.now().subtract(const Duration(hours: 49)),
+        isFirstTurn: false, // second-uid's turn
+      );
+
+      expect(
+        game.canClaimAbandonmentForfeit('second-uid', threshold: const Duration(hours: 48)),
+        isFalse,
+      );
+    });
+
+    test('false for a non-participant', () {
+      final game = gameWith(
+        createdAt: DateTime.now().subtract(const Duration(hours: 50)),
+        updatedAt: DateTime.now().subtract(const Duration(hours: 49)),
+      );
+
+      expect(
+        game.canClaimAbandonmentForfeit('nobody', threshold: const Duration(hours: 48)),
+        isFalse,
+      );
+    });
+
+    test('false once the game is already finished', () {
+      final game = gameWith(
+        createdAt: DateTime.now().subtract(const Duration(hours: 50)),
+        updatedAt: DateTime.now().subtract(const Duration(hours: 49)),
+        status: 'finished',
+      );
+
+      expect(
+        game.canClaimAbandonmentForfeit('first-uid', threshold: const Duration(hours: 48)),
+        isFalse,
+      );
+    });
+
+    test('falls back to createdAt when updatedAt was never set', () {
+      final game = gameWith(
+        createdAt: DateTime.now().subtract(const Duration(hours: 50)),
+        updatedAt: null,
+        isFirstTurn: false,
+      );
+
+      expect(
+        game.canClaimAbandonmentForfeit('first-uid', threshold: const Duration(hours: 48)),
+        isTrue,
+      );
+    });
+  });
+
   group('ReversiaPvpGame.fromFirestore / toFirestore', () {
     test('round-trips through Firestore', () async {
       final firestore = FakeFirebaseFirestore();

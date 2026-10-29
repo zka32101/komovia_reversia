@@ -232,4 +232,115 @@ void main() {
       expect(emitted.firstUid, 'u1');
     });
   });
+
+  group('ReversiaPvpGameService.claimAbandonmentForfeit', () {
+    Future<void> backdateUpdatedAt(
+      FakeFirebaseFirestore firestore,
+      String gameId,
+      Duration staleness,
+    ) {
+      return firestore.collection('reversia_pvp_games').doc(gameId).update({
+        'updatedAt': Timestamp.fromDate(DateTime.now().subtract(staleness)),
+      });
+    }
+
+    test('claims the game for the waiting player once stale enough',
+        () async {
+      final firestore = FakeFirebaseFirestore();
+      final service = ReversiaPvpGameService(firestore);
+      final game = await service.createGame(
+        firstUid: 'u1',
+        firstDisplayName: 'Alice',
+        secondUid: 'u2',
+        secondDisplayName: 'Bob',
+      );
+      // It's u1's turn (createGame sets isFirstTurn: true), so u2 is the
+      // one waiting and eligible to claim.
+      await backdateUpdatedAt(
+        firestore,
+        game.id,
+        ReversiaPvpGameService.abandonmentThreshold + const Duration(hours: 1),
+      );
+
+      await service.claimAbandonmentForfeit(gameId: game.id, claimantUid: 'u2');
+
+      final fetched = await service.getGame(game.id);
+      expect(fetched!.isFinished, isTrue);
+      expect(fetched.winnerUid, 'u2');
+      expect(fetched.result, 'forfeit');
+    });
+
+    test('does nothing before the threshold has elapsed', () async {
+      final firestore = FakeFirebaseFirestore();
+      final service = ReversiaPvpGameService(firestore);
+      final game = await service.createGame(
+        firstUid: 'u1',
+        firstDisplayName: 'Alice',
+        secondUid: 'u2',
+        secondDisplayName: 'Bob',
+      );
+
+      await service.claimAbandonmentForfeit(gameId: game.id, claimantUid: 'u2');
+
+      final fetched = await service.getGame(game.id);
+      expect(fetched!.isActive, isTrue);
+    });
+
+    test('does nothing for the player whose own turn it is', () async {
+      final firestore = FakeFirebaseFirestore();
+      final service = ReversiaPvpGameService(firestore);
+      final game = await service.createGame(
+        firstUid: 'u1',
+        firstDisplayName: 'Alice',
+        secondUid: 'u2',
+        secondDisplayName: 'Bob',
+      );
+      await backdateUpdatedAt(
+        firestore,
+        game.id,
+        ReversiaPvpGameService.abandonmentThreshold + const Duration(hours: 1),
+      );
+
+      // u1's own turn — they have nothing to claim.
+      await service.claimAbandonmentForfeit(gameId: game.id, claimantUid: 'u1');
+
+      final fetched = await service.getGame(game.id);
+      expect(fetched!.isActive, isTrue);
+    });
+
+    test('never overwrites an already-resigned game', () async {
+      final firestore = FakeFirebaseFirestore();
+      final service = ReversiaPvpGameService(firestore);
+      final game = await service.createGame(
+        firstUid: 'u1',
+        firstDisplayName: 'Alice',
+        secondUid: 'u2',
+        secondDisplayName: 'Bob',
+      );
+      await backdateUpdatedAt(
+        firestore,
+        game.id,
+        ReversiaPvpGameService.abandonmentThreshold + const Duration(hours: 1),
+      );
+      await service.resign(gameId: game.id, uid: 'u1');
+
+      await service.claimAbandonmentForfeit(gameId: game.id, claimantUid: 'u2');
+
+      final fetched = await service.getGame(game.id);
+      expect(fetched!.result, 'resignation');
+      expect(fetched.winnerUid, 'u2'); // unchanged from the resign
+    });
+
+    test('does nothing for a nonexistent game', () async {
+      final firestore = FakeFirebaseFirestore();
+      final service = ReversiaPvpGameService(firestore);
+
+      await service.claimAbandonmentForfeit(
+        gameId: 'no-such-game',
+        claimantUid: 'u2',
+      );
+
+      expect(await service.getGame('no-such-game'), isNull);
+    });
+  });
 }
