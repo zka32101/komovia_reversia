@@ -23,3 +23,13 @@ final markNotificationReadProvider = Provider(
   (ref) => (String uid, String id) =>
       ref.read(notificationServiceProvider).markRead(uid, id),
 );
+
+final notificationPreferenceProvider =
+    FutureProvider.family<NotificationPreference, String>(
+  (ref, uid) => ref.read(notificationServiceProvider).getPreferences(uid),
+);
+
+final saveNotificationPreferenceProvider = Provider(
+  (ref) => (String uid, NotificationPreference prefs) =>
+      ref.read(notificationServiceProvider).savePreferences(uid, prefs),
+);

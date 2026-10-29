@@ -2,6 +2,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/services/notification_service.dart';
 import 'package:komovia_reversia/services/reversia_pvp_game_service.dart';
 import 'package:komovia_reversia/viewmodels/index.dart';
@@ -117,5 +118,76 @@ void main() {
     expect(find.byType(ReversiaPvpGameScreen), findsNothing);
     final notification = (await notificationService.getNotifications('u1')).single;
     expect(notification.isRead, isTrue);
+  });
+
+  testWidgets('opening the preference dialog shows the saved settings', (
+    tester,
+  ) async {
+    final firestore = FakeFirebaseFirestore();
+    final notificationService = NotificationService(firestore: firestore);
+    await notificationService.savePreferences(
+      'u1',
+      const NotificationPreference(friendRequests: false),
+    );
+
+    await pumpScreen(
+      tester,
+      notificationService: notificationService,
+      pvpService: ReversiaPvpGameService(firestore),
+    );
+    await tester.tap(find.byIcon(Icons.settings_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.text('通知設定'), findsOneWidget);
+    final friendRequestsSwitch = tester.widget<SwitchListTile>(
+      find.widgetWithText(SwitchListTile, 'フレンド申請'),
+    );
+    expect(friendRequestsSwitch.value, isFalse);
+  });
+
+  testWidgets('toggling a switch and saving persists the new preference', (
+    tester,
+  ) async {
+    final firestore = FakeFirebaseFirestore();
+    final notificationService = NotificationService(firestore: firestore);
+
+    await pumpScreen(
+      tester,
+      notificationService: notificationService,
+      pvpService: ReversiaPvpGameService(firestore),
+    );
+    await tester.tap(find.byIcon(Icons.settings_outlined));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(SwitchListTile, 'トーナメント'));
+    await tester.pump();
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+
+    final saved = await notificationService.getPreferences('u1');
+    expect(saved.tournamentUpdates, isFalse);
+  });
+
+  testWidgets('cancelling the dialog does not persist any change', (
+    tester,
+  ) async {
+    final firestore = FakeFirebaseFirestore();
+    final notificationService = NotificationService(firestore: firestore);
+
+    await pumpScreen(
+      tester,
+      notificationService: notificationService,
+      pvpService: ReversiaPvpGameService(firestore),
+    );
+    await tester.tap(find.byIcon(Icons.settings_outlined));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(SwitchListTile, '実績解除'));
+    await tester.pump();
+    await tester.tap(find.text('キャンセル'));
+    await tester.pumpAndSettle();
+
+    final saved = await notificationService.getPreferences('u1');
+    expect(saved.achievements, isTrue);
   });
 }
