@@ -35,6 +35,16 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
     }
 
+    // users/{uid}/friends is denormalized onto both sides when a request
+    // is accepted (see FriendService.acceptRequest), so checking the
+    // viewer's own side is enough - no need to also read the other
+    // user's subcollection. Used by reversia_pvp_games' read rule to let
+    // a friend spectate (see live_friends_screen.dart).
+    function isFriendOf(uid) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(uid)/friends/$(request.auth.uid)).data.status == 'accepted';
+    }
+
     // ---------------- users/{uid} ----------------
     match /users/{uid} {
       allow read: if isSignedIn();
@@ -84,7 +94,10 @@ service cloud.firestore {
 
     // ---------------- reversia_pvp_games/{gameId} ----------------
     match /reversia_pvp_games/{gameId} {
-      allow read: if isEither(resource.data.firstUid, resource.data.secondUid);
+      // 対局者本人に加え、いずれかの対局者のフレンドも観戦目的で読める
+      // （ライブ観戦フレンド機能 - live_friends_screen.dart）。
+      allow read: if isEither(resource.data.firstUid, resource.data.secondUid) ||
+        isFriendOf(resource.data.firstUid) || isFriendOf(resource.data.secondUid);
       allow create: if isSignedIn() &&
         (request.auth.uid == request.resource.data.firstUid ||
          request.auth.uid == request.resource.data.secondUid);
