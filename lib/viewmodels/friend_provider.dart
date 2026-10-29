@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
 
+import '../models/user_search_result.dart';
 import '../services/friend_service.dart';
 import 'notification_provider.dart';
 
@@ -62,4 +63,13 @@ final blockFriendProvider = Provider(
 final unblockFriendProvider = Provider(
   (ref) => (String uid, String friendUid) =>
       ref.read(friendServiceProvider).unblockFriend(uid, friendUid),
+);
+
+/// 表示名の前方一致検索。クエリ文字列ごとの単発呼び出しのため
+/// `Provider.family`ではなく、呼び出し側（検索ダイアログ）が結果を
+/// 自前の状態として保持する単純なアクションにしている。
+final searchUsersByDisplayNameProvider =
+    Provider<Future<List<UserSearchResult>> Function(String, String)>(
+  (ref) => (query, excludeUid) =>
+      ref.read(friendServiceProvider).searchByDisplayName(query, excludeUid),
 );

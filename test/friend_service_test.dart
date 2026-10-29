@@ -195,4 +195,33 @@ void main() {
 
     expect(await service.blockedStream('u1').first, isEmpty);
   });
+
+  group('searchByDisplayName', () {
+    test('finds users whose displayName starts with the query', () async {
+      final results = await service.searchByDisplayName('Al', 'u2');
+      expect(results, hasLength(1));
+      expect(results.single.uid, 'u1');
+      expect(results.single.displayName, 'Alice');
+    });
+
+    test('excludes the caller even if their own name matches', () async {
+      final results = await service.searchByDisplayName('Al', 'u1');
+      expect(results, isEmpty);
+    });
+
+    test('is case-sensitive (Firestore range queries do not fold case)', () async {
+      final results = await service.searchByDisplayName('al', 'u2');
+      expect(results, isEmpty);
+    });
+
+    test('returns an empty list for an empty query without hitting Firestore', () async {
+      final results = await service.searchByDisplayName('   ', 'u2');
+      expect(results, isEmpty);
+    });
+
+    test('returns an empty list when nothing matches', () async {
+      final results = await service.searchByDisplayName('Zzz', 'u2');
+      expect(results, isEmpty);
+    });
+  });
 }

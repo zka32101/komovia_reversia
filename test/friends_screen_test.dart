@@ -103,18 +103,48 @@ void main() {
     expect(find.text('Bob'), findsOneWidget);
   });
 
-  testWidgets('sending a friend request via the dialog persists it', (tester) async {
-    final service = await pumpFriends(tester, uid: 'u1', displayName: 'Alice');
+  testWidgets('sending a friend request via the search dialog persists it', (tester) async {
+    final firestore = FakeFirebaseFirestore();
+    await firestore.collection('users').doc('u2').set({'displayName': 'Bob'});
+    final service =
+        await pumpFriends(tester, uid: 'u1', displayName: 'Alice', firestoreOverride: firestore);
 
     await tester.tap(find.byIcon(Icons.person_add));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'u2');
-    await tester.tap(find.text('送信'));
+    await tester.enterText(find.byType(TextField), 'Bob');
+    await tester.tap(find.text('検索'));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(ListTile, 'Bob'), findsOneWidget);
+    await tester.tap(find.text('申請'));
     await tester.pumpAndSettle();
 
     final pending = await service.pendingStream('u2').first;
     expect(pending, hasLength(1));
     expect(pending.first.friendUid, 'u1');
+  });
+
+  testWidgets('search results exclude the current user and update after sending', (
+    tester,
+  ) async {
+    final firestore = FakeFirebaseFirestore();
+    await firestore.collection('users').doc('u1').set({'displayName': 'Alice'});
+    await firestore.collection('users').doc('u2').set({'displayName': 'Alice2'});
+    await pumpFriends(tester, uid: 'u1', displayName: 'Alice', firestoreOverride: firestore);
+
+    await tester.tap(find.byIcon(Icons.person_add));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Alice');
+    await tester.tap(find.text('検索'));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(ListTile, 'Alice2'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'Alice'), findsNothing);
+
+    await tester.tap(find.text('申請'));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.check), findsOneWidget);
   });
 
   testWidgets('tapping the message icon on an accepted friend opens ChatScreen', (tester) async {
