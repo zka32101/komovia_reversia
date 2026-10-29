@@ -13,6 +13,7 @@ export 'src/reversia_board_renderer.dart';
 export 'src/reversia_engine.dart';
 export 'src/reversia_evaluator.dart';
 export 'src/reversia_game.dart';
+export 'src/reversia_game_analysis.dart';
 export 'src/reversia_handicap_rule.dart';
 export 'src/reversia_position.dart';
 export 'src/reversia_puzzle.dart';

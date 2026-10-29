@@ -13,6 +13,7 @@ import 'viewmodels/index.dart';
 import 'views/screens/leaderboard_screen.dart';
 import 'views/screens/onboarding_screen.dart';
 import 'views/screens/puzzle_screen.dart';
+import 'views/screens/reversia_game_review_screen.dart';
 import 'views/screens/reversia_matching_screen.dart';
 
 /// komovia_reversia's app shell: a single local human-vs-AI game screen
@@ -126,7 +127,9 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
   final _renderer = ReversiaBoardRenderer();
 
   late ReversiaPosition _position = _game.initialPosition();
+  late ReversiaPosition _initialPosition = _position;
   final List<Object> _historyKeys = [];
+  final List<RecordedMove> _moveRecord = [];
   Square? _selected;
   List<Square> _hints = const [];
   Move? _lastMove;
@@ -152,8 +155,10 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     _aiMoveTimer?.cancel();
     setState(() {
       _position = _game.initialPosition();
+      _initialPosition = _position;
       _historyKeys.clear();
       _historyKeys.add(_game.positionKey(_position));
+      _moveRecord.clear();
       _selected = null;
       _hints = const [];
       _lastMove = null;
@@ -162,7 +167,13 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
   }
 
   void _applyMove(Move move) {
+    final mover = _position.sideToMove;
     setState(() {
+      _moveRecord.add(RecordedMove(
+        number: _moveRecord.length + 1,
+        side: mover,
+        move: move,
+      ));
       _position = _game.apply(_position, move, historyKeys: _historyKeys);
       _historyKeys.add(_game.positionKey(_position));
       _lastMove = move;
@@ -174,6 +185,19 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
       ref.read(updateReversiaRatingAfterGameProvider)(result, _aiLevel);
     }
     _maybeScheduleAiMove();
+  }
+
+  void _openReview() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReversiaGameReviewScreen(
+          initialPosition: _initialPosition,
+          moves: List.of(_moveRecord),
+          humanSide: Side.first,
+        ),
+      ),
+    );
   }
 
   void _maybeScheduleAiMove() {
@@ -315,7 +339,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
                   },
                 ),
               ),
-              if (!_result.isOngoing)
+              if (!_result.isOngoing) ...[
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
                   child: FilledButton(
@@ -323,6 +347,14 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
                     child: const Text('もう一度'),
                   ),
                 ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: OutlinedButton(
+                    onPressed: _moveRecord.isEmpty ? null : _openReview,
+                    child: const Text('対局を振り返る'),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
