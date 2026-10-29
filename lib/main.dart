@@ -13,6 +13,7 @@ import 'firebase_options.dart';
 import 'services/onboarding_service.dart';
 import 'utils/reversia_move_feedback.dart';
 import 'viewmodels/index.dart';
+import 'views/screens/home_screen.dart';
 import 'views/screens/leaderboard_screen.dart';
 import 'views/screens/notification_screen.dart';
 import 'views/screens/onboarding_screen.dart';
@@ -116,7 +117,11 @@ class _RootScreenState extends ConsumerState<_RootScreen> {
     if (!completed) {
       return OnboardingScreen(onFinished: _onOnboardingFinished);
     }
-    return const ReversiaGameScreen();
+    return HomeScreen(
+      onPlayReversia: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const ReversiaGameScreen()),
+      ),
+    );
   }
 }
 
