@@ -12,10 +12,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// automatic AI reply) rather than any mocked game state.
 ///
 /// `_RootScreen` now shows `OnboardingScreen` first on a fresh install
-/// (see onboarding_screen_test.dart for that flow) - these tests are about
-/// the game itself, so they mark onboarding as already-completed and pump
-/// once extra to let `_RootScreen`'s async `hasCompletedOnboarding()`
-/// check resolve before asserting on the game screen.
+/// (see onboarding_screen_test.dart for that flow), then `HomeScreen`
+/// (see home_screen_test.dart) rather than `ReversiaGameScreen` directly -
+/// these tests are about the game itself, so they mark onboarding as
+/// already-completed, pump once extra to let `_RootScreen`'s async
+/// `hasCompletedOnboarding()` check resolve, then tap `HomeScreen`'s
+/// "プレイ" tile to reach the game screen before asserting on it.
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({'onboarding_completed': true});
@@ -28,6 +30,11 @@ void main() {
         local;
   }
 
+  Future<void> openGameFromHome(WidgetTester tester) async {
+    await tester.tap(find.text('プレイ'));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('shows the initial turn status and the board', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -37,6 +44,7 @@ void main() {
     );
     await tester.pump(); // let hasCompletedOnboarding() resolve
     await tester.pump();
+    await openGameFromHome(tester);
 
     expect(find.text('あなたの番です'), findsOneWidget);
     expect(find.byKey(const Key('reversia_board_gesture_detector')), findsOneWidget);
@@ -77,6 +85,7 @@ void main() {
     );
     await tester.pump(); // let hasCompletedOnboarding() resolve
     await tester.pump();
+    await openGameFromHome(tester);
 
     // ReversiaGame.initialPosition places 先手's front row at rank 0 — any
     // piece there has at least one legal orthogonal move (row 1 is only
@@ -105,6 +114,7 @@ void main() {
     );
     await tester.pump(); // let hasCompletedOnboarding() resolve
     await tester.pump();
+    await openGameFromHome(tester);
 
     await tester.tapAt(squareCenter(tester, 0, 0));
     await tester.pump();
@@ -128,6 +138,7 @@ void main() {
     );
     await tester.pump(); // let hasCompletedOnboarding() resolve
     await tester.pump();
+    await openGameFromHome(tester);
 
     await tester.tap(find.byIcon(Icons.lightbulb_outline));
     await tester.pump();
