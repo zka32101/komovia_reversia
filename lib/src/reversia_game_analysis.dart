@@ -81,6 +81,39 @@ class ReversiaMoveReview {
   ReversiaMoveQuality get quality => ReversiaMoveQuality.fromLoss(lossVsBest);
 }
 
+/// 対局を序盤・中盤・終盤の3つに区切った際の各局面。project-015の
+/// `skill_rating_provider.dart`の`SkillCategory`（opening/midgame/
+/// endgame/tactical）の移植漏れ分だが、元のポイント・ランク帯は
+/// 実際の対局内容と無関係な架空の数値だった（レート自体とは別に
+/// シミュレートされただけの「局面別レート」）ため、ここでは代わりに
+/// 既存の[ReversiaMoveReview]を手数で3等分して集計する、実在の
+/// データだけに基づく最小構成とした（`tactical`はこの区切り方と重複
+/// するため含めない）。
+enum ReversiaGamePhase {
+  opening('序盤'),
+  midgame('中盤'),
+  endgame('終盤');
+
+  final String label;
+  const ReversiaGamePhase(this.label);
+}
+
+/// [ReversiaGamePhase]ごとの集計。
+class ReversiaPhaseStats {
+  final int moveCount;
+  final int totalLoss;
+  final int mistakeCount;
+
+  const ReversiaPhaseStats({
+    required this.moveCount,
+    required this.totalLoss,
+    required this.mistakeCount,
+  });
+
+  /// 1手あたりの最善手との平均差。この局面の着手が無ければ0。
+  double get averageLoss => moveCount == 0 ? 0 : totalLoss / moveCount;
+}
+
 /// The full review of one side's moves across a finished (or in-progress)
 /// game: each move's [ReversiaMoveReview] plus a plain-language summary,
 /// the local analogue of the "敗因分析" (why-you-lost critique) and
@@ -105,6 +138,43 @@ class ReversiaGameAnalysis {
 
   int get blunderCount =>
       moveReviews.where((r) => r.quality == ReversiaMoveQuality.blunder).length;
+
+  /// [moveReviews]を手数の順番で序盤/中盤/終盤に3等分し、局面ごとの
+  /// 平均ロス・悪手数を集計する。着手が無ければ全局面0件。
+  Map<ReversiaGamePhase, ReversiaPhaseStats> get phaseBreakdown {
+    final phases = ReversiaGamePhase.values;
+    if (moveReviews.isEmpty) {
+      return {
+        for (final phase in phases)
+          phase: const ReversiaPhaseStats(moveCount: 0, totalLoss: 0, mistakeCount: 0),
+      };
+    }
+
+    final chunkSize = (moveReviews.length / phases.length).ceil();
+    final result = <ReversiaGamePhase, ReversiaPhaseStats>{};
+    for (var i = 0; i < phases.length; i++) {
+      final start = i * chunkSize;
+      if (start >= moveReviews.length) {
+        result[phases[i]] =
+            const ReversiaPhaseStats(moveCount: 0, totalLoss: 0, mistakeCount: 0);
+        continue;
+      }
+      final end = (start + chunkSize).clamp(0, moveReviews.length);
+      final slice = moveReviews.sublist(start, end);
+      final totalLoss = slice.fold<int>(0, (sum, r) => sum + r.lossVsBest);
+      final mistakes = slice
+          .where((r) =>
+              r.quality == ReversiaMoveQuality.mistake ||
+              r.quality == ReversiaMoveQuality.blunder)
+          .length;
+      result[phases[i]] = ReversiaPhaseStats(
+        moveCount: slice.length,
+        totalLoss: totalLoss,
+        mistakeCount: mistakes,
+      );
+    }
+    return result;
+  }
 
   /// The single worst move by [ReversiaMoveReview.lossVsBest], or `null`
   /// if no moves were played.

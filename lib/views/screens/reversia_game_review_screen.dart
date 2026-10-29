@@ -128,6 +128,10 @@ class _ReversiaGameReviewScreenState extends State<ReversiaGameReviewScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          if (analysis.moveReviews.isNotEmpty) ...[
+            _PhaseBreakdownCard(breakdown: analysis.phaseBreakdown),
+            const SizedBox(height: 16),
+          ],
           if (analysis.moveReviews.isEmpty)
             const Padding(
               padding: EdgeInsets.all(16),
@@ -185,6 +189,71 @@ class _MoveReviewTile extends StatelessWidget {
         ],
       ),
       trailing: Icon(Icons.circle, size: 12, color: _qualityColor(context)),
+    );
+  }
+}
+
+/// 序盤/中盤/終盤ごとの平均ロス・悪手数を表示する - 競合アプリの
+/// 「局面別の強さ」表示に相当するが、実在の着手データのみから算出
+/// する（[ReversiaGameAnalysis.phaseBreakdown]参照）。
+class _PhaseBreakdownCard extends StatelessWidget {
+  const _PhaseBreakdownCard({required this.breakdown});
+
+  final Map<ReversiaGamePhase, ReversiaPhaseStats> breakdown;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '局面別の傾向',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            for (final phase in ReversiaGamePhase.values)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: _PhaseRow(phase: phase, stats: breakdown[phase]!),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PhaseRow extends StatelessWidget {
+  const _PhaseRow({required this.phase, required this.stats});
+
+  final ReversiaGamePhase phase;
+  final ReversiaPhaseStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    if (stats.moveCount == 0) {
+      return Row(
+        children: [
+          SizedBox(width: 48, child: Text(phase.label)),
+          const Expanded(child: Text('着手なし')),
+        ],
+      );
+    }
+    return Row(
+      children: [
+        SizedBox(width: 48, child: Text(phase.label)),
+        Expanded(
+          child: Text(
+            '平均${stats.averageLoss.toStringAsFixed(0)}点 / 悪手${stats.mistakeCount}手',
+          ),
+        ),
+      ],
     );
   }
 }
