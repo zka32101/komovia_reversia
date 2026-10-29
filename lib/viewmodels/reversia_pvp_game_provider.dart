@@ -1,9 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
 
 import '../models/reversia_pvp_game.dart';
 import '../services/reversia_pvp_game_service.dart';
+import 'leaderboard_provider.dart';
 
 /// komovia_shogiの`shogi_pvp_game_provider.dart`と同じ役割（reversia向け）。
 /// `ReversiaPvpGameService`の薄いRiverpodラッパー。
@@ -18,22 +21,28 @@ final reversiaPvpGameStreamProvider =
 });
 
 /// (gameId, uid, move)を渡して着手する。拒否された場合はfalseを返す。
+/// 着手によって対局が終局した場合、両対局者のレーティングを更新する
+/// （best-effort、対局進行自体はブロックしない）。
 final applyReversiaPvpMoveProvider =
     Provider<Future<bool> Function(String gameId, String uid, Move move)>((
   ref,
 ) {
   final service = ref.watch(reversiaPvpGameServiceProvider);
-  return (gameId, uid, move) {
-    return service.applyMove(gameId: gameId, uid: uid, move: move);
+  return (gameId, uid, move) async {
+    final applied =
+        await service.applyMove(gameId: gameId, uid: uid, move: move);
+    if (applied) await _onReversiaPvpGameFinished(ref, service, gameId);
+    return applied;
   };
 });
 
-/// 投了する。
+/// 投了する。投了によって終局するため、常にレーティングを更新する。
 final resignReversiaPvpGameProvider =
     Provider<Future<void> Function(String gameId, String uid)>((ref) {
   final service = ref.watch(reversiaPvpGameServiceProvider);
-  return (gameId, uid) {
-    return service.resign(gameId: gameId, uid: uid);
+  return (gameId, uid) async {
+    await service.resign(gameId: gameId, uid: uid);
+    await _onReversiaPvpGameFinished(ref, service, gameId);
   };
 });
 
@@ -63,3 +72,69 @@ final createReversiaPvpGameProvider = Provider<
     );
   };
 });
+
+/// 終局したPvP対局の結果を標準的なElo式で両対局者のレーティングに反映
+/// する（K=32固定）。komovia_goの`pvp_game_provider.dart`の
+/// `_updateEloRatings`と同じ役割（reversia向け）。失敗はbest-effortで
+/// 握りつぶす — 対局自体は常にこのエラーに関係なく継続できる。
+Future<void> _onReversiaPvpGameFinished(
+  Ref ref,
+  ReversiaPvpGameService service,
+  String gameId,
+) async {
+  ReversiaPvpGame? game;
+  try {
+    game = await service.getGame(gameId);
+  } catch (_) {
+    return;
+  }
+  if (game == null || !game.isFinished) return;
+
+  try {
+    await _updateReversiaPvpEloRatings(ref, game);
+  } catch (_) {
+    // best-effort: 対局自体は常に続行できる
+  }
+}
+
+Future<void> _updateReversiaPvpEloRatings(Ref ref, ReversiaPvpGame game) async {
+  const kFactor = 32;
+  final leaderboardService = ref.read(leaderboardServiceProvider);
+
+  final firstEntry = await leaderboardService.getEntry(game.firstUid);
+  final secondEntry = await leaderboardService.getEntry(game.secondUid);
+  final firstRating = firstEntry?.rating ?? 1200;
+  final secondRating = secondEntry?.rating ?? 1200;
+
+  final double firstScore;
+  if (game.winnerUid == game.firstUid) {
+    firstScore = 1.0;
+  } else if (game.winnerUid == game.secondUid) {
+    firstScore = 0.0;
+  } else {
+    firstScore = 0.5; // 引き分け
+  }
+  final secondScore = 1.0 - firstScore;
+
+  final expectedFirst =
+      1.0 / (1.0 + math.pow(10, (secondRating - firstRating) / 400));
+  final expectedSecond = 1.0 - expectedFirst;
+
+  final firstDelta = (kFactor * (firstScore - expectedFirst)).round();
+  final secondDelta = (kFactor * (secondScore - expectedSecond)).round();
+
+  await leaderboardService.incrementStats(
+    uid: game.firstUid,
+    displayName: game.firstDisplayName,
+    ratingDelta: firstDelta,
+    gamesDelta: 1,
+    winsDelta: firstScore == 1.0 ? 1 : 0,
+  );
+  await leaderboardService.incrementStats(
+    uid: game.secondUid,
+    displayName: game.secondDisplayName,
+    ratingDelta: secondDelta,
+    gamesDelta: 1,
+    winsDelta: secondScore == 1.0 ? 1 : 0,
+  );
+}
