@@ -15,6 +15,11 @@ final pendingFriendsStreamProvider =
   (ref, uid) => ref.watch(friendServiceProvider).pendingStream(uid),
 );
 
+final blockedFriendsStreamProvider =
+    StreamProvider.family<List<Friendship>, String>(
+  (ref, uid) => ref.watch(friendServiceProvider).blockedStream(uid),
+);
+
 /// 送信成功時、受信者へ`friend_request`通知を送る（komovia_goの
 /// `addFriendProvider`と同じ役割）。通知の送信に失敗しても申請自体は
 /// 成立しているため、best-effortで握りつぶす。

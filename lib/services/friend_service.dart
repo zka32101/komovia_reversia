@@ -145,4 +145,18 @@ class FriendService {
         .snapshots()
         .map((s) => s.docs.map(_fromDoc).toList());
   }
+
+  /// [uid]自身の視点でブロック状態になっている相手一覧（[uid]側の
+  /// エントリーが`'blocked'`のもの - 自分がブロックした場合と、相手に
+  /// ブロックされた場合の両方を含む）。`unblockFriend`は常に呼び出し元
+  /// 自身のエントリーを削除するので、どちらの場合でもここから解除できる
+  /// （相手が独立にブロックしていた場合は、相手側のエントリーはそのまま
+  /// 残る - `blockedBy`が自分でない時は相手側まで削除しないのが既存の
+  /// `unblockFriend`の仕様）。
+  Stream<List<Friendship>> blockedStream(String uid) {
+    return _friendsOf(uid)
+        .where('status', isEqualTo: 'blocked')
+        .snapshots()
+        .map((s) => s.docs.map(_fromDoc).toList());
+  }
 }

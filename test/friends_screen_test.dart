@@ -16,8 +16,9 @@ void main() {
     WidgetTester tester, {
     required String uid,
     String displayName = 'Alice',
+    FakeFirebaseFirestore? firestoreOverride,
   }) async {
-    final firestore = FakeFirebaseFirestore();
+    final firestore = firestoreOverride ?? FakeFirebaseFirestore();
     final service = FriendService(firestore: firestore);
     await tester.pumpWidget(
       ProviderScope(
@@ -130,5 +131,73 @@ void main() {
     final chatScreen = tester.widget<ChatScreen>(find.byType(ChatScreen));
     expect(chatScreen.friendUid, 'u2');
     expect(chatScreen.friendDisplayName, 'Bob');
+  });
+
+  testWidgets('blocking a friend moves them from フレンド into ブロック中', (tester) async {
+    final firestore = FakeFirebaseFirestore();
+    await firestore.collection('users').doc('u2').set({'displayName': 'Bob'});
+    final service = await pumpFriends(
+      tester,
+      uid: 'u1',
+      displayName: 'Alice',
+      firestoreOverride: firestore,
+    );
+    await service.sendRequest('u2', 'Bob', 'u1');
+    await service.acceptRequest('u1', 'u2');
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.byIcon(Icons.block));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('フレンドはまだいません'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(of: find.byType(TabBar), matching: find.text('ブロック中')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bob'), findsOneWidget);
+    expect(find.text('ブロック解除'), findsOneWidget);
+  });
+
+  testWidgets('shows the empty state on ブロック中 with no blocked friends', (tester) async {
+    await pumpFriends(tester, uid: 'u1');
+
+    await tester.tap(
+      find.descendant(of: find.byType(TabBar), matching: find.text('ブロック中')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('ブロック中のフレンドはいません'), findsOneWidget);
+  });
+
+  testWidgets('unblocking from ブロック中 removes it from the list', (tester) async {
+    final firestore = FakeFirebaseFirestore();
+    await firestore.collection('users').doc('u2').set({'displayName': 'Bob'});
+    final service = await pumpFriends(
+      tester,
+      uid: 'u1',
+      displayName: 'Alice',
+      firestoreOverride: firestore,
+    );
+    await service.sendRequest('u2', 'Bob', 'u1');
+    await service.acceptRequest('u1', 'u2');
+    await service.blockFriend('u1', 'u2');
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(
+      find.descendant(of: find.byType(TabBar), matching: find.text('ブロック中')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Bob'), findsOneWidget);
+
+    await tester.tap(find.text('ブロック解除'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('ブロック中のフレンドはいません'), findsOneWidget);
   });
 }
