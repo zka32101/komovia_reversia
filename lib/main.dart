@@ -819,6 +819,28 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
                 ),
               ),
               if (!_result.isOngoing) ...[
+                if (!_twoPlayerMode)
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final statsAsync = ref.watch(myReversiaDifficultyStatsProvider);
+                      final stats = statsAsync.value;
+                      if (stats == null) return const SizedBox.shrink();
+                      final advice = recommendDifficultyChange(
+                        currentLevel: _aiLevel,
+                        stats: stats,
+                      );
+                      final message = reversiaDifficultyAdviceMessage(advice, _aiLevel);
+                      if (message == null) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Text(
+                          message,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      );
+                    },
+                  ),
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
                   child: FilledButton(

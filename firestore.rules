@@ -173,6 +173,11 @@ service cloud.firestore {
       allow read, write: if isOwner(uid);
     }
 
+    // ---------------- reversia_difficulty_stats/{uid} ----------------
+    match /reversia_difficulty_stats/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
     // ---------------- reversia_weekly_progress/{uid}_{weekId} ----------------
     // ドキュメントIDが`{uid}_{weekId}`形式（ReversiaWeeklyProgressService
     // 参照）なので、isOwner(uid)の代わりにID自体が自分のuidで始まるかを

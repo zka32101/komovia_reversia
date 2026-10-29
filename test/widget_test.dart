@@ -1,3 +1,4 @@
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,7 +7,9 @@ import 'package:komovia_reversia/komovia_reversia.dart';
 import 'package:komovia_reversia/main.dart';
 import 'package:komovia_reversia/services/board_theme_preferences.dart';
 import 'package:komovia_reversia/services/game_save_service.dart';
+import 'package:komovia_reversia/services/reversia_difficulty_stats_service.dart';
 import 'package:komovia_reversia/viewmodels/auth_provider.dart';
+import 'package:komovia_reversia/viewmodels/reversia_difficulty_stats_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Smoke test for the app shell added in this PR: the real
@@ -51,6 +54,38 @@ void main() {
 
     expect(find.text('あなたの番です'), findsOneWidget);
     expect(find.byKey(const Key('reversia_board_gesture_detector')), findsOneWidget);
+  });
+
+  testWidgets(
+      '難易度の提案は対局中は表示されない（統計を上書きしても）',
+      (tester) async {
+    final firestore = FakeFirebaseFirestore();
+    final statsService = ReversiaDifficultyStatsService(firestore);
+    for (var i = 0; i < 10; i++) {
+      await statsService.recordGame(uid: 'u1', level: 2, won: true);
+    }
+
+    // サインイン済みでHomeScreenを経由すると、本物のFirebase未初期化の
+    // テスト環境では通知バッジ等の実Firestoreプロバイダが例外を投げる
+    // （`shows the notification bell once signed in`と同じ既知の
+    // pre-existing問題）ため、未サインインのままゲーム画面を開く -
+    // この機能自体は`currentUidProvider`にしか依存していないので、
+    // 対局中は表示されないことの確認には十分。
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentUidProvider.overrideWithValue(null),
+          reversiaDifficultyStatsServiceProvider.overrideWithValue(statsService),
+        ],
+        child: const KomoviaReversiaApp(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    await openGameFromHome(tester);
+    await tester.pump();
+
+    expect(find.textContaining('挑戦してみませんか'), findsNothing);
   });
 
   testWidgets('hides the notification bell when signed out', (tester) async {
