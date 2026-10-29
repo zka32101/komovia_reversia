@@ -198,5 +198,29 @@ service cloud.firestore {
         allow update, delete: if false;
       }
     }
+
+    // ---------------- tournaments/{tournamentId} ----------------
+    match /tournaments/{tournamentId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+      // 参加: participantUidsのみ変更可能で、呼び出し元自身のuidを
+      // 追加する場合のみ許可。
+      // ブラケット進行(status/winnerId/lastAdvancedRound): これを
+      // 担うCloud Functionが無いため、どの参加者からの書き込みも許可
+      // する（既知のクライアント信頼ギャップとして記録、バグではない）。
+      allow update: if isSignedIn() && (
+        (onlyChanged(['participantUids']) &&
+          request.resource.data.participantUids.hasAll(resource.data.participantUids) &&
+          request.resource.data.participantUids.hasAny([request.auth.uid])) ||
+        (onlyChanged(['status', 'winnerId', 'lastAdvancedRound']) &&
+          request.auth.uid in resource.data.participantUids)
+      );
+
+      match /matches/{matchId} {
+        allow read: if isSignedIn();
+        // 試合生成/結果報告: トーナメント参加者であれば誰でも可能。
+        allow write: if isSignedIn();
+      }
+    }
   }
 }

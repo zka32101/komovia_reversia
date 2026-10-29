@@ -10,6 +10,7 @@ import 'puzzle_screen.dart';
 import 'reversia_matching_screen.dart';
 import 'reversia_pvp_games_list_screen.dart';
 import 'settings_screen.dart';
+import 'tournament_screen.dart';
 
 /// アプリのホーム画面 - komovia_shogiの`HomeScreen`と同じ役割（reversia向
 /// け）。これまで`main.dart`の`_RootScreen`はオンボーディング完了後
@@ -156,6 +157,20 @@ class HomeScreen extends ConsumerWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => FriendsScreen(
+                    uid: uid,
+                    displayName: 'Player ${uid.substring(0, 6)}',
+                  ),
+                ),
+              ),
+            ),
+            _HomeTile(
+              icon: Icons.emoji_events,
+              title: 'トーナメント',
+              subtitle: '参加・ブラケットを見る',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TournamentScreen(
                     uid: uid,
                     displayName: 'Player ${uid.substring(0, 6)}',
                   ),
