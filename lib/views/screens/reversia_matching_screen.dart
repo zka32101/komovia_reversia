@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/reversia_matching.dart';
 import '../../viewmodels/index.dart';
+import 'reversia_challenge_screen.dart';
 import 'reversia_pvp_game_screen.dart';
 
 /// 実力マッチングEngine画面。komovia_shogiの`ShogiMatchingScreen`と同じ
@@ -64,6 +65,21 @@ class _ReversiaMatchingScreenState extends ConsumerState<ReversiaMatchingScreen>
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Text('対局相手を探す'),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ReversiaChallengeScreen(
+                      uid: widget.uid,
+                      displayName: widget.displayName,
+                    ),
+                  ),
+                ),
+                child: const Text('特定の相手と対戦する（招待コード）'),
               ),
             ),
             const SizedBox(height: 32),
