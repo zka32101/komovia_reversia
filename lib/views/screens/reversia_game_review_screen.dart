@@ -179,6 +179,8 @@ class _MoveReviewTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (review.lossVsBest > 0) Text('最善手との差: ${review.lossVsBest}点'),
+          if (review.bestAlternativeMove != null)
+            Text('最善手: ${reversiaMoveNotation(review.bestAlternativeMove!)}'),
           if (note.isNotEmpty) Text(note, style: const TextStyle(fontStyle: FontStyle.italic)),
         ],
       ),
