@@ -57,37 +57,63 @@ class TournamentScreen extends ConsumerWidget {
 
   void _showCreateDialog(BuildContext context, WidgetRef ref) {
     final nameController = TextEditingController();
+    var format = 'single_elimination';
     showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('トーナメントを作成'),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(labelText: '名前'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('トーナメントを作成'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: '名前'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: format,
+                decoration: const InputDecoration(labelText: '形式'),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'single_elimination',
+                    child: Text('シングルエリミネーション'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'round_robin',
+                    child: Text('総当たり戦'),
+                  ),
+                  DropdownMenuItem(value: 'swiss', child: Text('スイス式')),
+                ],
+                onChanged: (v) => setState(() => format = v ?? format),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('キャンセル'),
+            ),
+            TextButton(
+              onPressed: () {
+                final name = nameController.text.trim();
+                if (name.isNotEmpty) {
+                  final now = DateTime.now();
+                  ref.read(createTournamentProvider)(
+                    name: name,
+                    description: '',
+                    createdBy: uid,
+                    startDate: now,
+                    endDate: now.add(const Duration(days: 7)),
+                    format: format,
+                  );
+                }
+                Navigator.pop(ctx);
+              },
+              child: const Text('作成'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              final name = nameController.text.trim();
-              if (name.isNotEmpty) {
-                final now = DateTime.now();
-                ref.read(createTournamentProvider)(
-                  name: name,
-                  description: '',
-                  createdBy: uid,
-                  startDate: now,
-                  endDate: now.add(const Duration(days: 7)),
-                );
-              }
-              Navigator.pop(ctx);
-            },
-            child: const Text('作成'),
-          ),
-        ],
       ),
     );
   }
