@@ -168,6 +168,11 @@ service cloud.firestore {
       allow read, write: if isOwner(uid);
     }
 
+    // ---------------- reversia_game_stats/{uid} ----------------
+    match /reversia_game_stats/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
     // ---------------- message_threads/{threadId} ----------------
     // 1対1のフレンド間DM。threadIdは常に2者のuidをソートして連結した
     // ものなので（DirectMessageService.threadIdFor）、participantUidsは

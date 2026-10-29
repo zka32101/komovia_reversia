@@ -5,6 +5,7 @@ import '../utils/reversia_rating.dart';
 import 'achievement_provider.dart';
 import 'auth_provider.dart';
 import 'leaderboard_provider.dart';
+import 'reversia_game_stats_provider.dart';
 
 /// AI対局終了時にレーティング・対局数・勝数を更新する（komovia_shogiの
 /// `updateShogiRatingAfterGameProvider`に相当）。失敗はbest-effortで握り
@@ -30,6 +31,7 @@ final updateReversiaRatingAfterGameProvider =
         humanSide: humanSide,
       );
       final won = result.kind == ResultKind.win && result.winner == humanSide;
+      final isDraw = result.kind == ResultKind.draw;
       await service.incrementStats(
         uid: uid,
         displayName: entry?.displayName ?? 'Player ${uid.substring(0, 6)}',
@@ -37,6 +39,11 @@ final updateReversiaRatingAfterGameProvider =
         gamesDelta: 1,
         winsDelta: won ? 1 : 0,
       );
+      await ref.read(reversiaGameStatsServiceProvider).recordGameResult(
+            uid: uid,
+            won: won,
+            draw: isDraw,
+          );
       if (won) {
         await ref.read(checkAndUnlockAchievementsProvider)(uid);
       }

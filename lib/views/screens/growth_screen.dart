@@ -8,13 +8,16 @@ import '../../viewmodels/index.dart';
 /// 着実な成長を実感できるというシリーズ共通のコンセプトに沿って、
 /// レーティング・対局数・勝率と、常に前向きな一言コメントを表示する
 /// （まだ対局記録の推移を保存していないため、推移グラフは含めない -
-/// komovia_shogiの同画面と同じ割り切り）。
+/// komovia_shogiの同画面と同じ割り切り）。project-015の
+/// `engine/statistics.dart`（`GameStatistics`）の移植漏れだった引き分け
+/// 数・現在の連勝・最長連勝も`ReversiaGameStats`から追加表示する。
 class GrowthScreen extends ConsumerWidget {
   const GrowthScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entryAsync = ref.watch(myLeaderboardEntryProvider);
+    final statsAsync = ref.watch(myReversiaGameStatsProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('成長の記録')),
@@ -33,6 +36,7 @@ class GrowthScreen extends ConsumerWidget {
               ),
             );
           }
+          final stats = statsAsync.value;
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -61,6 +65,36 @@ class GrowthScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+              if (stats != null && stats.totalGames > 0) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.handshake_outlined,
+                        label: '引き分け',
+                        value: '${stats.draws}',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.local_fire_department,
+                        label: '現在の連勝',
+                        value: '${stats.currentWinStreak}',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.whatshot,
+                        label: '最長連勝',
+                        value: '${stats.longestWinStreak}',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 24),
               Card(
                 color: Theme.of(context).colorScheme.secondaryContainer,
