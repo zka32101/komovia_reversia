@@ -23,7 +23,7 @@ import 'tournament_screen.dart';
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key, required this.onPlayReversia});
 
-  final VoidCallback onPlayReversia;
+  final void Function({bool resume}) onPlayReversia;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -118,11 +118,18 @@ class HomeScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (ref.watch(hasInProgressGameProvider).value ?? false)
+            _HomeTile(
+              icon: Icons.history,
+              title: '続きから',
+              subtitle: '進行中の対局を再開する',
+              onTap: () => onPlayReversia(resume: true),
+            ),
           _HomeTile(
             icon: Icons.play_circle_fill,
             title: 'プレイ',
             subtitle: 'AIと対局する',
-            onTap: onPlayReversia,
+            onTap: () => onPlayReversia(),
           ),
           _HomeTile(
             icon: Icons.calendar_today,
