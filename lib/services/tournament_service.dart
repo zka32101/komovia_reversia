@@ -358,9 +358,9 @@ class TournamentService {
   Future<void> recordMatchResult(
     String tournamentId,
     String matchId,
-    String winnerUid,
-    Map<String, String> displayNames,
-  ) async {
+    String winnerUid, [
+    Map<String, String> displayNames = const {},
+  ]) async {
     final matchDoc = await _matchesOf(tournamentId).doc(matchId).get();
     final round = (matchDoc.data()?['round'] as int?) ?? 1;
 
@@ -370,13 +370,33 @@ class TournamentService {
       'completedAt': DateTime.now().toIso8601String(),
     });
 
+    // 呼び出し元(例: PvP対局終局時のフック)は、その対局の2人分の表示名
+    // しか知らない場合がある。次ラウンドの組み合わせには、同ラウンドの
+    // 他の試合の勝者の表示名も必要なため、既存の試合ドキュメントから
+    // 分かる範囲で補完する（呼び出し元の値を優先）。
+    final existingMatches = await _matchesOf(tournamentId).get();
+    final mergedDisplayNames = <String, String>{
+      for (final doc in existingMatches.docs)
+        for (final m in [TournamentMatch.fromJson(doc.data())]) ...{
+          if (m.player1Uid != null && m.player1DisplayName != null)
+            m.player1Uid!: m.player1DisplayName!,
+          if (m.player2Uid != null && m.player2DisplayName != null)
+            m.player2Uid!: m.player2DisplayName!,
+        },
+      ...displayNames,
+    };
+
     final tournament = await getTournament(tournamentId);
     if (tournament?.format == 'round_robin') {
       await _completeRoundRobinIfDone(tournamentId);
     } else if (tournament?.format == 'swiss') {
-      await _advanceSwissRoundIfComplete(tournamentId, round, displayNames);
+      await _advanceSwissRoundIfComplete(
+        tournamentId,
+        round,
+        mergedDisplayNames,
+      );
     } else {
-      await _advanceRoundIfComplete(tournamentId, displayNames);
+      await _advanceRoundIfComplete(tournamentId, mergedDisplayNames);
     }
   }
 

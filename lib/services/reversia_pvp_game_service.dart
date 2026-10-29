@@ -45,6 +45,53 @@ class ReversiaPvpGameService {
     return game;
   }
 
+  /// トーナメント試合用の対局を作成する。[tournamentId]/[matchId]の試合
+  /// にまだgameIdが無ければトランザクション内で「対局を作成+試合に
+  /// gameId/statusを紐付け」をアトミックに行うため、両対局者がほぼ同時に
+  /// 開始しても対局が2つ作られない - 先に成立した方のgameIdを両者が
+  /// 受け取る（komovia_goの`PvpGameService.createGameForTournamentMatch`
+  /// と同じ役割）。
+  Future<String> createGameForTournamentMatch({
+    required String tournamentId,
+    required String matchId,
+    required String firstUid,
+    required String firstDisplayName,
+    required String secondUid,
+    required String secondDisplayName,
+  }) {
+    return _firestore.runTransaction<String>((transaction) async {
+      final matchRef = _firestore
+          .collection('tournaments')
+          .doc(tournamentId)
+          .collection('matches')
+          .doc(matchId);
+      final matchDoc = await transaction.get(matchRef);
+      final existingGameId = matchDoc.data()?['gameId'] as String?;
+      if (existingGameId != null) return existingGameId;
+
+      final gameRef = _games.doc();
+      final game = ReversiaPvpGame(
+        id: gameRef.id,
+        firstUid: firstUid,
+        firstDisplayName: firstDisplayName,
+        secondUid: secondUid,
+        secondDisplayName: secondDisplayName,
+        isFirstTurn: true,
+        movesCount: 0,
+        status: 'active',
+        tournamentId: tournamentId,
+        tournamentMatchId: matchId,
+        createdAt: DateTime.now(),
+      );
+      transaction.set(gameRef, game.toFirestore());
+      transaction.update(matchRef, {
+        'gameId': gameRef.id,
+        'status': 'in_progress',
+      });
+      return gameRef.id;
+    });
+  }
+
   Future<ReversiaPvpGame?> getGame(String gameId) async {
     final doc = await _games.doc(gameId).get();
     if (!doc.exists) return null;

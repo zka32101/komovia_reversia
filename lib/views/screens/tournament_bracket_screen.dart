@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
 
 import '../../viewmodels/index.dart';
+import 'reversia_pvp_game_screen.dart';
 
 /// トーナメントブラケット画面 - komovia_shogiの`TournamentBracketScreen`
-/// と同じ役割（reversia向けに日本語化）。「勝ちを報告する」は自分自身の
-/// 試合結果をそのまま報告する簡易方式（実際のPvP対局との紐付けは未実装
-/// - GoEnの本家実装でもこの段階ではまだ対応していなかった範囲）。
-class TournamentBracketScreen extends ConsumerWidget {
+/// と同じ役割（reversia向けに日本語化）。試合結果は自己申告ではなく、
+/// 実際に`ReversiaPvpGameScreen`で対局した結果が
+/// `createTournamentReversiaGameProvider`/対局終局フックを通じて自動的に
+/// 反映される（komovia_goの`createGameForTournamentMatch`/
+/// `_onGameFinished`と同じ役割）。
+class TournamentBracketScreen extends ConsumerStatefulWidget {
   const TournamentBracketScreen({
     super.key,
     required this.tournamentId,
@@ -21,13 +24,25 @@ class TournamentBracketScreen extends ConsumerWidget {
   final String displayName;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final matches =
-        ref.watch(tournamentMatchesStreamProvider(tournamentId)).value ?? [];
+  ConsumerState<TournamentBracketScreen> createState() =>
+      _TournamentBracketScreenState();
+}
+
+class _TournamentBracketScreenState
+    extends ConsumerState<TournamentBracketScreen> {
+  bool _isCreatingGame = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final matches = ref
+            .watch(tournamentMatchesStreamProvider(widget.tournamentId))
+            .value ??
+        [];
     final tournaments = ref.watch(tournamentsStreamProvider).value ?? [];
-    final tournament = tournaments.where((t) => t.id == tournamentId).isEmpty
-        ? null
-        : tournaments.firstWhere((t) => t.id == tournamentId);
+    final tournament =
+        tournaments.where((t) => t.id == widget.tournamentId).isEmpty
+            ? null
+            : tournaments.firstWhere((t) => t.id == widget.tournamentId);
 
     final byRound = <int, List<TournamentMatch>>{};
     for (final m in matches) {
@@ -43,7 +58,7 @@ class TournamentBracketScreen extends ConsumerWidget {
         displayNames[m.player2Uid!] = m.player2DisplayName ?? '';
       }
     }
-    displayNames[uid] = displayName;
+    displayNames[widget.uid] = widget.displayName;
 
     return Scaffold(
       appBar: AppBar(
@@ -53,14 +68,16 @@ class TournamentBracketScreen extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.leaderboard_outlined),
               tooltip: '順位表',
-              onPressed: () => _showStandings(context, ref),
+              onPressed: () => _showStandings(context),
             ),
         ],
       ),
       floatingActionButton: tournament != null && tournament.isUpcoming
           ? FloatingActionButton.extended(
-              onPressed: () =>
-                  ref.read(startTournamentProvider)(tournamentId, displayNames),
+              onPressed: () => ref.read(startTournamentProvider)(
+                widget.tournamentId,
+                displayNames,
+              ),
               label: const Text('開始する'),
               icon: const Icon(Icons.play_arrow),
             )
@@ -72,41 +89,88 @@ class TournamentBracketScreen extends ConsumerWidget {
                 return ExpansionTile(
                   title: Text('${entry.key}回戦'),
                   initiallyExpanded: true,
-                  children: entry.value.map<Widget>((m) {
-                    final isMyMatch = (m.player1Uid == uid || m.player2Uid == uid) &&
-                        !m.isCompleted &&
-                        !m.isBye;
-                    return ListTile(
-                      title: Text(
-                        '${m.player1DisplayName ?? "不戦勝"} vs ${m.player2DisplayName ?? "不戦勝"}',
-                      ),
-                      subtitle: Text(
-                        m.isCompleted
-                            ? '勝者: ${displayNames[m.winnerUid] ?? m.winnerUid}'
-                            : m.status,
-                      ),
-                      trailing: isMyMatch
-                          ? TextButton(
-                              onPressed: () => ref.read(recordMatchResultProvider)(
-                                tournamentId,
-                                m.id,
-                                uid,
-                                displayNames,
-                              ),
-                              child: const Text('勝ちを報告する'),
-                            )
-                          : null,
-                    );
-                  }).toList(),
+                  children: entry.value
+                      .map<Widget>((m) => _buildMatchTile(m, displayNames))
+                      .toList(),
                 );
               }).toList(),
             ),
     );
   }
 
-  Future<void> _showStandings(BuildContext context, WidgetRef ref) async {
-    final standings =
-        await ref.read(tournamentStandingsProvider(tournamentId).future);
+  Widget _buildMatchTile(TournamentMatch m, Map<String, String> displayNames) {
+    final isMyMatch = m.player1Uid == widget.uid || m.player2Uid == widget.uid;
+    final canStart = isMyMatch &&
+        m.isPending &&
+        !m.isBye &&
+        m.gameId == null;
+
+    return ListTile(
+      title: Text(
+        '${m.player1DisplayName ?? "不戦勝"} vs ${m.player2DisplayName ?? "不戦勝"}',
+      ),
+      subtitle: Text(
+        m.isCompleted
+            ? '勝者: ${displayNames[m.winnerUid] ?? m.winnerUid}'
+            : m.status,
+      ),
+      trailing: m.gameId != null
+          ? TextButton(
+              onPressed: () => _openGame(m.gameId!),
+              child: const Text('対局を見る'),
+            )
+          : canStart
+              ? TextButton(
+                  onPressed:
+                      _isCreatingGame ? null : () => _startMatch(m, displayNames),
+                  child: const Text('対局を開始する'),
+                )
+              : null,
+    );
+  }
+
+  Future<void> _startMatch(
+    TournamentMatch m,
+    Map<String, String> displayNames,
+  ) async {
+    setState(() => _isCreatingGame = true);
+    try {
+      final opponentUid =
+          m.player1Uid == widget.uid ? m.player2Uid! : m.player1Uid!;
+      final opponentName = (m.player1Uid == widget.uid
+              ? m.player2DisplayName
+              : m.player1DisplayName) ??
+          'Player';
+
+      // UIDの辞書順が小さい方を先手にする（両対局者が同じ結果になるようにする）。
+      final amIFirst = widget.uid.compareTo(opponentUid) < 0;
+      final gameId = await ref.read(createTournamentReversiaGameProvider)(
+        tournamentId: widget.tournamentId,
+        matchId: m.id,
+        firstUid: amIFirst ? widget.uid : opponentUid,
+        firstDisplayName: amIFirst ? widget.displayName : opponentName,
+        secondUid: amIFirst ? opponentUid : widget.uid,
+        secondDisplayName: amIFirst ? opponentName : widget.displayName,
+      );
+
+      if (!mounted) return;
+      _openGame(gameId);
+    } finally {
+      if (mounted) setState(() => _isCreatingGame = false);
+    }
+  }
+
+  void _openGame(String gameId) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ReversiaPvpGameScreen(gameId: gameId),
+      ),
+    );
+  }
+
+  Future<void> _showStandings(BuildContext context) async {
+    final standings = await ref
+        .read(tournamentStandingsProvider(widget.tournamentId).future);
     if (!context.mounted) return;
     await showDialog<void>(
       context: context,

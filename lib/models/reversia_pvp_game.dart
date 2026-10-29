@@ -26,6 +26,8 @@ class ReversiaPvpGame {
   final String? winnerUid;
   final String? result; // 'resignation', 'victory', 'draw', 'forfeit', null(進行中)
   final String? matchId; // ReversiaMatchResult.idとの紐付け（あれば）
+  final String? tournamentId;
+  final String? tournamentMatchId;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -42,6 +44,8 @@ class ReversiaPvpGame {
     this.winnerUid,
     this.result,
     this.matchId,
+    this.tournamentId,
+    this.tournamentMatchId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -92,6 +96,8 @@ class ReversiaPvpGame {
       winnerUid: data['winnerUid'] as String?,
       result: data['result'] as String?,
       matchId: data['matchId'] as String?,
+      tournamentId: data['tournamentId'] as String?,
+      tournamentMatchId: data['tournamentMatchId'] as String?,
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
@@ -114,6 +120,8 @@ class ReversiaPvpGame {
       'winnerUid': winnerUid,
       'result': result,
       'matchId': matchId,
+      'tournamentId': tournamentId,
+      'tournamentMatchId': tournamentMatchId,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt ?? DateTime.now()),
     };

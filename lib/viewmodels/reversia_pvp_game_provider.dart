@@ -8,6 +8,7 @@ import '../models/reversia_pvp_game.dart';
 import '../services/reversia_pvp_game_service.dart';
 import 'achievement_provider.dart';
 import 'leaderboard_provider.dart';
+import 'tournament_provider.dart';
 
 /// komovia_shogiの`shogi_pvp_game_provider.dart`と同じ役割（reversia向け）。
 /// `ReversiaPvpGameService`の薄いRiverpodラッパー。
@@ -94,6 +95,38 @@ final createReversiaPvpGameProvider = Provider<
   };
 });
 
+/// トーナメント試合用の対局作成。両対局者がほぼ同時に開始しても対局が
+/// 2つ作られないよう、Firestoreトランザクションで排他制御される
+/// （`ReversiaPvpGameService.createGameForTournamentMatch`参照）。
+final createTournamentReversiaGameProvider = Provider<
+    Future<String> Function({
+      required String tournamentId,
+      required String matchId,
+      required String firstUid,
+      required String firstDisplayName,
+      required String secondUid,
+      required String secondDisplayName,
+    })>((ref) {
+  final service = ref.watch(reversiaPvpGameServiceProvider);
+  return ({
+    required tournamentId,
+    required matchId,
+    required firstUid,
+    required firstDisplayName,
+    required secondUid,
+    required secondDisplayName,
+  }) {
+    return service.createGameForTournamentMatch(
+      tournamentId: tournamentId,
+      matchId: matchId,
+      firstUid: firstUid,
+      firstDisplayName: firstDisplayName,
+      secondUid: secondUid,
+      secondDisplayName: secondDisplayName,
+    );
+  };
+});
+
 /// 終局したPvP対局の結果を標準的なElo式で両対局者のレーティングに反映
 /// する（K=32固定）。komovia_goの`pvp_game_provider.dart`の
 /// `_updateEloRatings`と同じ役割（reversia向け）。失敗はbest-effortで
@@ -113,6 +146,25 @@ Future<void> _onReversiaPvpGameFinished(
 
   try {
     await _updateReversiaPvpEloRatings(ref, game);
+  } catch (_) {
+    // best-effort: 対局自体は常に続行できる
+  }
+
+  if (game.tournamentId == null ||
+      game.tournamentMatchId == null ||
+      game.winnerUid == null) {
+    return; // トーナメントに紐づいていない、または引き分け
+  }
+  try {
+    await ref.read(tournamentServiceProvider).recordMatchResult(
+          game.tournamentId!,
+          game.tournamentMatchId!,
+          game.winnerUid!,
+          {
+            game.firstUid: game.firstDisplayName,
+            game.secondUid: game.secondDisplayName,
+          },
+        );
   } catch (_) {
     // best-effort: 対局自体は常に続行できる
   }
