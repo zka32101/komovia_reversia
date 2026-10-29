@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'firebase_options.dart';
 import 'services/board_theme_preferences.dart';
@@ -413,6 +414,23 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     );
   }
 
+  /// 対局結果をOSの共有シートでSNS向けキャプションとして共有する -
+  /// komovia_coreの`ShareableMoment`/`buildShareCaption`を使い、他の
+  /// Komoviaシリーズ（shogi/go/chess）の「結果をシェア」と同じキャプ
+  /// ション形式に揃える（project-015には同等機能が無かった - 競合
+  /// Othello/Reversiアプリの多くが持つ結果シェア機能の移植漏れ）。
+  Future<void> _shareResult() async {
+    await SharePlus.instance.share(
+      ShareParams(
+        text: buildReversiaResultShareText(
+          _result,
+          humanSide: Side.first,
+          moveCount: _moveRecord.length,
+        ),
+      ),
+    );
+  }
+
   /// 競合アプリの多くが標準機能として持つヒント — `ReversiaEvaluator`
   /// （AI探索・振り返り機能と同じ評価関数）で現局面の最善手を1つ求め、
   /// 通常のタップ選択と同じ`_selected`/`_hints`でハイライトする（自動で
@@ -742,6 +760,14 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
                   child: OutlinedButton(
                     onPressed: _moveRecord.isEmpty ? null : _openReview,
                     child: const Text('対局を振り返る'),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: OutlinedButton.icon(
+                    onPressed: _shareResult,
+                    icon: const Icon(Icons.share),
+                    label: const Text('結果をシェア'),
                   ),
                 ),
               ],
