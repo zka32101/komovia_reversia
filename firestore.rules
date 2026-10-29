@@ -31,6 +31,27 @@ service cloud.firestore {
       allow write: if isOwner(uid);
     }
 
+    // ---------------- users/{uid}/friends/{friendUid} ----------------
+    match /users/{uid}/friends/{friendUid} {
+      allow read: if isOwner(uid);
+      // A request is created by the sender, on BOTH users' subcollections
+      // (see friend_service.dart) — so creation of a doc not owned by the
+      // caller is allowed only when it records a request THEY sent.
+      allow create: if isSignedIn() &&
+        (isOwner(uid) || request.resource.data.requestedBy == request.auth.uid);
+      // Accept: only the non-sender may flip pending -> accepted.
+      // Block: either side may set status -> blocked at any time.
+      allow update: if isSignedIn() && (
+        (onlyChanged(['status']) &&
+          resource.data.status == 'pending' &&
+          request.resource.data.status == 'accepted' &&
+          resource.data.requestedBy != request.auth.uid) ||
+        (onlyChanged(['status', 'blockedBy']) &&
+          request.resource.data.status == 'blocked')
+      );
+      allow delete: if isOwner(uid) || isOwner(friendUid);
+    }
+
     // ---------------- reversia_matchmaking_queue/{uid} ----------------
     match /reversia_matchmaking_queue/{queueUid} {
       // The whole queue is scanned client-side to find a candidate.
