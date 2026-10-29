@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:komovia_core/komovia_core.dart';
 
+import 'reversia_board_theme.dart';
 import 'reversia_position.dart';
 
 /// Paints a [ReversiaPosition] onto a square canvas. Ported from
@@ -26,22 +27,15 @@ class ReversiaBoardPainter extends CustomPainter {
   final Move? lastMove;
   final List<Square> hints;
   final Square? selected;
+  final ReversiaBoardTheme theme;
 
   const ReversiaBoardPainter({
     required this.position,
     this.lastMove,
     this.hints = const [],
     this.selected,
+    this.theme = ReversiaBoardTheme.classic,
   });
-
-  static const Color lightSquare = Color(0xFFDEB887);
-  static const Color darkSquare = Color(0xFFB08552);
-  static const Color frontPieceColor = Color(0xFF2E3A59);
-  static const Color backPieceColor = Color(0xFFC0392B);
-  static const Color kingColor = Color(0xFFD4AF37);
-  static const Color lastMoveColor = Color(0x55D4AF37);
-  static const Color selectedBorderColor = Color(0xFFFFFFFF);
-  static const Color hintColor = Color(0x992E7D32);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -61,11 +55,11 @@ class ReversiaBoardPainter extends CustomPainter {
         final isDark = (file + rank).isEven;
         canvas.drawRect(
           rect,
-          Paint()..color = isDark ? darkSquare : lightSquare,
+          Paint()..color = isDark ? theme.darkSquare : theme.lightSquare,
         );
 
         if (square == lastFrom || square == lastTo) {
-          canvas.drawRect(rect, Paint()..color = lastMoveColor);
+          canvas.drawRect(rect, Paint()..color = theme.lastMoveColor);
         }
 
         final piece = position.at(square);
@@ -77,7 +71,7 @@ class ReversiaBoardPainter extends CustomPainter {
           canvas.drawCircle(
             rect.center,
             cell * 0.12,
-            Paint()..color = hintColor,
+            Paint()..color = theme.hintColor,
           );
         }
 
@@ -85,7 +79,7 @@ class ReversiaBoardPainter extends CustomPainter {
           canvas.drawRect(
             rect.deflate(cell * 0.03),
             Paint()
-              ..color = selectedBorderColor
+              ..color = theme.selectedBorderColor
               ..style = PaintingStyle.stroke
               ..strokeWidth = cell * 0.06,
           );
@@ -98,8 +92,8 @@ class ReversiaBoardPainter extends CustomPainter {
     final center = cellRect.center;
     final radius = cellRect.width * 0.38;
     final color = piece.type == ReversiaPieceType.king
-        ? kingColor
-        : (piece.face == ReversiaFace.front ? frontPieceColor : backPieceColor);
+        ? theme.kingColor
+        : (piece.face == ReversiaFace.front ? theme.frontPieceColor : theme.backPieceColor);
 
     canvas.drawCircle(center, radius, Paint()..color = Colors.black26);
     canvas.drawCircle(
@@ -144,6 +138,7 @@ class ReversiaBoardPainter extends CustomPainter {
       oldDelegate.position != position ||
       oldDelegate.lastMove != lastMove ||
       oldDelegate.selected != selected ||
+      oldDelegate.theme != theme ||
       !_sameSquares(oldDelegate.hints, hints);
 
   static bool _sameSquares(List<Square> a, List<Square> b) {
