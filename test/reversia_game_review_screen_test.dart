@@ -24,6 +24,9 @@ void main() {
     expect(find.text('対局の振り返り'), findsOneWidget);
     expect(find.text('総評'), findsOneWidget);
     expect(find.byType(ListTile), findsOneWidget);
+    // 着手の代数記法（列a-f+行1-6、project-015のGameNotationと同じ規約）
+    // がタイトルに含まれていること。
+    expect(find.textContaining(reversiaMoveNotation(move)), findsOneWidget);
   });
 
   testWidgets('an empty move list shows the no-moves message', (

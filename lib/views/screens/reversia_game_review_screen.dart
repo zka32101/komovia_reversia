@@ -86,7 +86,9 @@ class _MoveReviewTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: CircleAvatar(child: Text('${review.moveNumber}')),
-      title: Text(review.quality.label),
+      title: Text(
+        '${reversiaMoveNotation(review.move)}  ${review.quality.label}',
+      ),
       subtitle: review.lossVsBest > 0
           ? Text('最善手との差: ${review.lossVsBest}点')
           : null,
