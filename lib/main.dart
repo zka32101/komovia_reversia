@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
@@ -35,6 +37,16 @@ void main() async {
   try {
     await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform);
+    // Route uncaught errors to Crashlytics so production crashes are
+    // visible instead of silently dropped (komovia_go's main.dart, same
+    // wiring). Only set up once Firebase has actually initialized —
+    // against the current placeholder config this never runs, same as
+    // every other Firebase-backed feature in this app.
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
   } catch (_) {
     // Placeholder Firebase config won't actually initialize against a real
     // backend; swallow so the app still runs standalone.
