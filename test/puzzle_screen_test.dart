@@ -1,11 +1,13 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 import 'package:komovia_reversia/services/leaderboard_service.dart';
 import 'package:komovia_reversia/services/reversia_puzzle_log_service.dart';
+import 'package:komovia_reversia/utils/reversia_move_feedback.dart';
 import 'package:komovia_reversia/viewmodels/auth_provider.dart';
 import 'package:komovia_reversia/viewmodels/leaderboard_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_puzzle_log_provider.dart';
@@ -94,6 +96,66 @@ void main() {
 
     expect(find.text('残念、違う手です'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'もう一度'), findsOneWidget);
+  });
+
+  group('move feedback', () {
+    late int platformCallCount;
+
+    setUp(() {
+      platformCallCount = 0;
+      reversiaFeedbackEnabled = true;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        platformCallCount++;
+        return null;
+      });
+    });
+
+    tearDown(() {
+      reversiaFeedbackEnabled = true;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+    });
+
+    testWidgets('a correct answer triggers haptic/sound feedback', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [currentUidProvider.overrideWithValue(null)],
+          child: const MaterialApp(home: PuzzleScreen()),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tapAt(squareCenter(tester, solutionMove.from));
+      await tester.pump();
+      await tester.tapAt(squareCenter(tester, solutionMove.to));
+      await tester.pump();
+
+      expect(platformCallCount, greaterThan(0));
+    });
+
+    testWidgets('a wrong answer triggers haptic/sound feedback', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [currentUidProvider.overrideWithValue(null)],
+          child: const MaterialApp(home: PuzzleScreen()),
+        ),
+      );
+      await tester.pump();
+
+      final game = ReversiaGame();
+      final decoy = game
+          .legalMoves(todaysPuzzle.position)
+          .whereType<BoardMove>()
+          .firstWhere((m) => m != solutionMove);
+
+      await tester.tapAt(squareCenter(tester, decoy.from));
+      await tester.pump();
+      await tester.tapAt(squareCenter(tester, decoy.to));
+      await tester.pump();
+
+      expect(platformCallCount, greaterThan(0));
+    });
   });
 
   testWidgets('「もう一度」resets the board after a wrong attempt', (tester) async {

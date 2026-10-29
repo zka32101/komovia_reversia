@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 
+import '../../utils/reversia_move_feedback.dart';
 import '../../viewmodels/index.dart';
 
 /// 「今日の1局」: `reversiaPuzzleForDate`で選ばれる、全プレイヤーが同じ日に
@@ -99,6 +100,11 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
 
     final attempted = BoardMove(from: _selected!, to: square);
     final correct = attempted == _solutionMove;
+    if (correct) {
+      playReversiaCaptureFeedback();
+    } else {
+      playReversiaIllegalMoveFeedback();
+    }
     setState(() {
       _outcome = correct ? _PuzzleOutcome.correct : _PuzzleOutcome.incorrect;
       _selected = null;
