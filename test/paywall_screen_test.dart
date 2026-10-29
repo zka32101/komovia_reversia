@@ -2,6 +2,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/services/premium_entitlement_service.dart';
 import 'package:komovia_reversia/viewmodels/purchase_provider.dart';
 import 'package:komovia_reversia/views/screens/paywall_screen.dart';

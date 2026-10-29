@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:komovia_core/komovia_core.dart';
 
 /// プレミアムサポーターの権限管理 - GoEnの`PurchaseService`/`User.
 /// subscriptionActive`相当の役割だが、reversiaには大きなUserモデルが
@@ -9,7 +10,14 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 /// は存在しない - これは開発者を応援するための任意のサポーター購入
 /// （月額/年額/買い切り）であり、ホーム画面にサポーターバッジを表示する
 /// のみ。将来的に機能ゲートが必要になった場合も、このドキュメントの
-/// `isActiveAt`を読むだけで判定できる。
+/// `isCurrentlyActive`を読むだけで判定できる。
+///
+/// 権限の形は`PremiumEntitlement`として独自に持たず、komovia_coreの
+/// `Entitlement`/`SubscriptionPlan`を使う（chessとgoenのPurchaseService
+/// を比較して抽出された共通形 - core側のdoc comment参照）。Firestore側
+/// の既存ドキュメント形式（`isActive`フィールドを保存しない、付与時点
+/// で常にアクティブという前提）はこのサービスの変換関数
+/// ([_toFirestore]/[_fromFirestore])で維持しているため、移行は不要。
 ///
 /// 他のKomoviaシリーズ（GoEn）と同じく、App Store/Play Storeの領収書を
 /// サーバー側で検証するCloud Functionsが無いため、クライアントが
@@ -24,15 +32,45 @@ class PremiumEntitlementService {
   DocumentReference<Map<String, Object?>> _docOf(String uid) =>
       _firestore.collection('premium_entitlements').doc(uid);
 
-  Future<PremiumEntitlement?> getEntitlement(String uid) async {
-    final doc = await _docOf(uid).get();
-    if (!doc.exists) return null;
-    return PremiumEntitlement.fromJson(doc.data()!);
+  Entitlement _fromFirestore(Map<String, Object?> json) {
+    final planName = json['plan'] as String?;
+    final plan = planName == null
+        ? null
+        : SubscriptionPlan.values.firstWhere(
+            (p) => p.name == planName,
+            orElse: () => SubscriptionPlan.monthly,
+          );
+    return Entitlement(
+      // 付与時点では常にアクティブとして保存している（grantEntitlement
+      // 参照）。実際にまだ有効かどうかは期限切れを都度判定する
+      // `isCurrentlyActive`で確認する - このフィールド自体は保存して
+      // いない（旧`PremiumEntitlement`と同じFirestore形式を維持）。
+      isActive: true,
+      plan: plan,
+      startedAt: json['startedAt'] != null
+          ? DateTime.parse(json['startedAt'] as String)
+          : null,
+      expiresAt: json['expiresAt'] != null
+          ? DateTime.parse(json['expiresAt'] as String)
+          : null,
+    );
   }
 
-  Stream<PremiumEntitlement?> watchEntitlement(String uid) {
+  Map<String, Object?> _toFirestore(Entitlement entitlement) => {
+        'plan': entitlement.plan?.name,
+        'startedAt': entitlement.startedAt?.toIso8601String(),
+        'expiresAt': entitlement.expiresAt?.toIso8601String(),
+      };
+
+  Future<Entitlement?> getEntitlement(String uid) async {
+    final doc = await _docOf(uid).get();
+    if (!doc.exists) return null;
+    return _fromFirestore(doc.data()!);
+  }
+
+  Stream<Entitlement?> watchEntitlement(String uid) {
     return _docOf(uid).snapshots().map(
-          (doc) => doc.exists ? PremiumEntitlement.fromJson(doc.data()!) : null,
+          (doc) => doc.exists ? _fromFirestore(doc.data()!) : null,
         );
   }
 
@@ -50,34 +88,26 @@ class PremiumEntitlementService {
     final now = DateTime.now();
     if (skipIfAlreadyActive) {
       final existing = await getEntitlement(uid);
-      if (existing != null && existing.isActiveAt(now)) return;
+      if (existing != null && existing.isCurrentlyActive(now: now)) return;
     }
 
-    final entitlement = PremiumEntitlement(
+    final entitlement = Entitlement(
+      isActive: true,
       plan: plan,
       startedAt: now,
       expiresAt: plan.entitlementLength == null
           ? null
           : now.add(plan.entitlementLength!),
     );
-    await _docOf(uid).set(entitlement.toJson());
+    await _docOf(uid).set(_toFirestore(entitlement));
   }
 }
 
-enum SubscriptionPlan { monthly, annual, lifetime }
-
-extension SubscriptionPlanProductId on SubscriptionPlan {
+extension ReversiaSubscriptionPlanDisplay on SubscriptionPlan {
   String get productId => switch (this) {
         SubscriptionPlan.monthly => PurchaseService.monthlyProductId,
         SubscriptionPlan.annual => PurchaseService.annualProductId,
         SubscriptionPlan.lifetime => PurchaseService.lifetimeProductId,
-      };
-
-  /// 購入時点からの権限の有効期間。nullは「無期限（買い切り）」。
-  Duration? get entitlementLength => switch (this) {
-        SubscriptionPlan.monthly => const Duration(days: 30),
-        SubscriptionPlan.annual => const Duration(days: 365),
-        SubscriptionPlan.lifetime => null,
       };
 
   String get label => switch (this) {
@@ -85,42 +115,6 @@ extension SubscriptionPlanProductId on SubscriptionPlan {
         SubscriptionPlan.annual => '年額プラン',
         SubscriptionPlan.lifetime => '買い切りプラン',
       };
-}
-
-class PremiumEntitlement {
-  const PremiumEntitlement({
-    required this.plan,
-    required this.startedAt,
-    this.expiresAt,
-  });
-
-  final SubscriptionPlan plan;
-  final DateTime startedAt;
-  final DateTime? expiresAt;
-
-  bool isActiveAt(DateTime time) =>
-      expiresAt == null || expiresAt!.isAfter(time);
-
-  bool get isActive => isActiveAt(DateTime.now());
-
-  Map<String, Object?> toJson() => {
-        'plan': plan.name,
-        'startedAt': startedAt.toIso8601String(),
-        'expiresAt': expiresAt?.toIso8601String(),
-      };
-
-  factory PremiumEntitlement.fromJson(Map<String, Object?> json) {
-    return PremiumEntitlement(
-      plan: SubscriptionPlan.values.firstWhere(
-        (p) => p.name == json['plan'],
-        orElse: () => SubscriptionPlan.monthly,
-      ),
-      startedAt: DateTime.parse(json['startedAt'] as String),
-      expiresAt: json['expiresAt'] != null
-          ? DateTime.parse(json['expiresAt'] as String)
-          : null,
-    );
-  }
 }
 
 /// プラットフォームの`in_app_purchase`プラグインの薄いラッパー -
