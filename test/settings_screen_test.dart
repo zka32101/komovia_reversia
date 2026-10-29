@@ -2,9 +2,11 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:komovia_reversia/services/avatar_preferences.dart';
 import 'package:komovia_reversia/services/daily_reminder_preferences.dart';
 import 'package:komovia_reversia/services/premium_entitlement_service.dart';
 import 'package:komovia_reversia/services/sound_feedback_preferences.dart';
+import 'package:komovia_reversia/src/reversia_avatar.dart';
 import 'package:komovia_reversia/utils/reversia_move_feedback.dart';
 import 'package:komovia_reversia/viewmodels/purchase_provider.dart';
 import 'package:komovia_reversia/views/screens/how_to_play_screen.dart';
@@ -78,6 +80,18 @@ class _FakeSoundFeedbackPreferences implements SoundFeedbackPreferencesLike {
   Future<void> setEnabled(bool value) async => enabled = value;
 }
 
+class _FakeAvatarPreferences implements AvatarPreferencesLike {
+  ReversiaAvatar avatar;
+
+  _FakeAvatarPreferences({this.avatar = ReversiaAvatar.defaultAvatar});
+
+  @override
+  Future<ReversiaAvatar> getAvatar() async => avatar;
+
+  @override
+  Future<void> setAvatar(ReversiaAvatar newAvatar) async => avatar = newAvatar;
+}
+
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -93,6 +107,7 @@ void main() {
     LocalNotificationServiceLike? notificationService,
     DailyReminderPreferencesLike? preferences,
     SoundFeedbackPreferencesLike? soundFeedbackPreferences,
+    AvatarPreferencesLike? avatarPreferences,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -108,6 +123,7 @@ void main() {
             preferences: preferences ?? _FakePreferences(),
             soundFeedbackPreferences:
                 soundFeedbackPreferences ?? _FakeSoundFeedbackPreferences(),
+            avatarPreferences: avatarPreferences ?? _FakeAvatarPreferences(),
           ),
         ),
       ),
@@ -317,5 +333,30 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('shows the saved avatar emoji and label', (tester) async {
+    await pumpSettings(
+      tester,
+      avatarPreferences: _FakeAvatarPreferences(avatar: ReversiaAvatar.byId('fox')),
+    );
+
+    expect(find.text('🦊'), findsOneWidget);
+    expect(find.text('フォックス'), findsOneWidget);
+  });
+
+  testWidgets('picking a new avatar persists it and updates the tile', (tester) async {
+    final avatarPrefs = _FakeAvatarPreferences();
+    await pumpSettings(tester, avatarPreferences: avatarPrefs);
+
+    await tester.tap(find.text('アバター'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('🐉  ドラゴン'), findsOneWidget);
+    await tester.tap(find.text('🐉  ドラゴン'));
+    await tester.pumpAndSettle();
+
+    expect(avatarPrefs.avatar.id, 'dragon');
+    expect(find.text('ドラゴン'), findsOneWidget);
   });
 }
