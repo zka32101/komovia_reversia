@@ -159,5 +159,69 @@ void main() {
       expect(analysis.moveReviews, hasLength(1));
       expect(analysis.moveReviews.single.side, Side.first);
     });
+
+    group('phaseBreakdown', () {
+      test('all three phases are zeroed out when there are no moves', () {
+        final analysis = ReversiaGameAnalyzer(game: game).analyze(
+          initialPosition: game.initialPosition(),
+          moves: const [],
+          side: Side.first,
+        );
+
+        for (final phase in ReversiaGamePhase.values) {
+          final stats = analysis.phaseBreakdown[phase]!;
+          expect(stats.moveCount, 0);
+          expect(stats.averageLoss, 0);
+          expect(stats.mistakeCount, 0);
+        }
+      });
+
+      test('splits reviewed moves evenly into opening/midgame/endgame thirds', () {
+        var position = game.initialPosition();
+        final historyKeys = <Object>[game.positionKey(position)];
+        final moves = <RecordedMove>[];
+
+        // 6手(Side.firstの3手+Side.secondの3手)を単純にプレイし、
+        // Side.firstの3つのレビューが各局面に1つずつ入ることを確認する。
+        for (var i = 0; i < 6; i++) {
+          final side = position.sideToMove;
+          final legal = game.legalMoves(position, historyKeys: historyKeys);
+          if (legal.isEmpty) break;
+          final move = legal.first;
+          moves.add(RecordedMove(number: i + 1, side: side, move: move));
+          position = game.apply(position, move, historyKeys: historyKeys);
+          historyKeys.add(game.positionKey(position));
+        }
+
+        final analysis = ReversiaGameAnalyzer(game: game).analyze(
+          initialPosition: game.initialPosition(),
+          moves: moves,
+          side: Side.first,
+        );
+
+        expect(analysis.moveReviews.length, 3);
+        for (final phase in ReversiaGamePhase.values) {
+          expect(analysis.phaseBreakdown[phase]!.moveCount, 1);
+        }
+      });
+
+      test('averageLoss matches the sum of lossVsBest divided by move count', () {
+        var position = game.initialPosition();
+        final historyKeys = <Object>[game.positionKey(position)];
+        final legal = game.legalMoves(position, historyKeys: historyKeys);
+        final move = legal.first;
+
+        final analysis = ReversiaGameAnalyzer(game: game).analyze(
+          initialPosition: position,
+          moves: [RecordedMove(number: 1, side: Side.first, move: move)],
+          side: Side.first,
+        );
+
+        final openingStats = analysis.phaseBreakdown[ReversiaGamePhase.opening]!;
+        expect(openingStats.moveCount, 1);
+        expect(openingStats.totalLoss, analysis.moveReviews.single.lossVsBest);
+        expect(openingStats.averageLoss, analysis.moveReviews.single.lossVsBest.toDouble());
+      });
+    });
   });
 }

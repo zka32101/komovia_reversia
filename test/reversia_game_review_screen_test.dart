@@ -27,6 +27,10 @@ void main() {
     // 着手の代数記法（列a-f+行1-6、project-015のGameNotationと同じ規約）
     // がタイトルに含まれていること。
     expect(find.textContaining(reversiaMoveNotation(move)), findsOneWidget);
+    expect(find.text('局面別の傾向'), findsOneWidget);
+    expect(find.text('序盤'), findsOneWidget);
+    expect(find.text('中盤'), findsOneWidget);
+    expect(find.text('終盤'), findsOneWidget);
   });
 
   testWidgets('an empty move list shows the no-moves message', (
