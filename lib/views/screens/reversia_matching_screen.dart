@@ -233,6 +233,18 @@ class _ReversiaMatchingScreenState extends ConsumerState<ReversiaMatchingScreen>
 
       await ref.read(attachReversiaGameToMatchProvider)(match.id, game.id);
 
+      try {
+        await ref.read(notificationServiceProvider).send(
+              uid: opponentUid,
+              title: '${widget.displayName}さんと対局が始まりました',
+              body: 'タップして対局を開く',
+              type: 'pvp_challenge',
+              data: {'gameId': game.id},
+            );
+      } catch (_) {
+        // best-effort: 通知に失敗しても対局自体は成立している
+      }
+
       if (!mounted) return;
       ref.invalidate(reversiaMatchHistoryProvider(widget.uid));
       Navigator.of(context).push(

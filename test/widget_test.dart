@@ -42,6 +42,32 @@ void main() {
     expect(find.byKey(const Key('reversia_board_gesture_detector')), findsOneWidget);
   });
 
+  testWidgets('hides the notification bell when signed out', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [currentUidProvider.overrideWithValue(null)],
+        child: const KomoviaReversiaApp(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byIcon(Icons.notifications), findsNothing);
+  });
+
+  testWidgets('shows the notification bell once signed in', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [currentUidProvider.overrideWithValue('u1')],
+        child: const KomoviaReversiaApp(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byIcon(Icons.notifications), findsOneWidget);
+  });
+
   testWidgets('tapping one of 先手\'s pieces then a legal destination moves it and triggers an AI reply', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

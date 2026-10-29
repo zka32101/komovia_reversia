@@ -2,9 +2,11 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:komovia_reversia/services/notification_service.dart';
 import 'package:komovia_reversia/services/reversia_matching_service.dart';
 import 'package:komovia_reversia/services/reversia_pvp_game_service.dart';
 import 'package:komovia_reversia/viewmodels/auth_provider.dart';
+import 'package:komovia_reversia/viewmodels/notification_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_matching_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_pvp_game_provider.dart';
 import 'package:komovia_reversia/views/screens/reversia_matching_screen.dart';
@@ -15,6 +17,7 @@ void main() {
     WidgetTester tester, {
     required ReversiaMatchingService matchingService,
     required ReversiaPvpGameService pvpService,
+    NotificationService? notificationService,
     String uid = 'u1',
   }) async {
     await tester.pumpWidget(
@@ -23,6 +26,8 @@ void main() {
           reversiaMatchingServiceProvider.overrideWithValue(matchingService),
           reversiaPvpGameServiceProvider.overrideWithValue(pvpService),
           currentUidProvider.overrideWithValue(uid),
+          if (notificationService != null)
+            notificationServiceProvider.overrideWithValue(notificationService),
         ],
         child: MaterialApp(
           home: ReversiaMatchingScreen(uid: uid, displayName: 'Alice'),
@@ -107,6 +112,30 @@ void main() {
     expect(find.byType(ReversiaPvpGameScreen), findsOneWidget);
     final history = await matchingService.getMatchHistory('u1');
     expect(history.single.gameId, isNotNull);
+  });
+
+  testWidgets('starting the game notifies the opponent', (tester) async {
+    final firestore = FakeFirebaseFirestore();
+    final matchingService = ReversiaMatchingService(firestore);
+    final pvpService = ReversiaPvpGameService(firestore);
+    final notificationService = NotificationService(firestore: firestore);
+    await matchingService.joinQueue(uid: 'u2', displayName: 'Bob', rating: 1200);
+
+    await pumpScreen(
+      tester,
+      matchingService: matchingService,
+      pvpService: pvpService,
+      notificationService: notificationService,
+    );
+    await tester.tap(find.widgetWithText(FilledButton, '対局相手を探す'));
+    await waitForAsyncWork(tester);
+    await tester.tap(find.text('対局を開始する'));
+    await waitForAsyncWork(tester);
+
+    final notifications = await notificationService.getNotifications('u2');
+    expect(notifications, hasLength(1));
+    expect(notifications.single.type, 'pvp_challenge');
+    expect(notifications.single.data?['gameId'], isNotNull);
   });
 
   testWidgets('match history lists a past match and opens its game on tap', (

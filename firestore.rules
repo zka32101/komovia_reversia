@@ -102,5 +102,21 @@ service cloud.firestore {
       );
       allow delete: if false;
     }
+
+    // ---------------- notifications/{uid}/... ----------------
+    match /notifications/{uid}/items/{notificationId} {
+      allow read: if isOwner(uid);
+      // Any signed-in user may send a notification to another user (a
+      // pvp_challenge when a match/challenge creates a game) — the
+      // recipient uid is fixed by the path, so this can't write anyone
+      // else's data.
+      allow create: if isSignedIn();
+      allow update: if isOwner(uid) && onlyChanged(['isRead', 'readAt']);
+      allow delete: if isOwner(uid);
+    }
+
+    match /notifications/{uid}/notificationPreferences/{doc} {
+      allow read, write: if isOwner(uid);
+    }
   }
 }

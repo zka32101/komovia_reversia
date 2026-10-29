@@ -2,9 +2,11 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:komovia_reversia/services/notification_service.dart';
 import 'package:komovia_reversia/services/reversia_challenge_service.dart';
 import 'package:komovia_reversia/services/reversia_pvp_game_service.dart';
 import 'package:komovia_reversia/viewmodels/auth_provider.dart';
+import 'package:komovia_reversia/viewmodels/notification_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_challenge_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_pvp_game_provider.dart';
 import 'package:komovia_reversia/views/screens/reversia_challenge_screen.dart';
@@ -15,6 +17,7 @@ void main() {
     WidgetTester tester, {
     required ReversiaChallengeService challengeService,
     required ReversiaPvpGameService pvpService,
+    NotificationService? notificationService,
     String uid = 'u1',
   }) async {
     await tester.pumpWidget(
@@ -23,6 +26,8 @@ void main() {
           reversiaChallengeServiceProvider.overrideWithValue(challengeService),
           reversiaPvpGameServiceProvider.overrideWithValue(pvpService),
           currentUidProvider.overrideWithValue(uid),
+          if (notificationService != null)
+            notificationServiceProvider.overrideWithValue(notificationService),
         ],
         child: MaterialApp(
           home: ReversiaChallengeScreen(uid: uid, displayName: 'Alice'),
@@ -139,5 +144,37 @@ void main() {
     );
     expect(game!.firstUid, 'host-uid');
     expect(game.secondUid, 'guest-uid');
+  });
+
+  testWidgets('the host notifies the guest once the game is created',
+      (tester) async {
+    final firestore = FakeFirebaseFirestore();
+    final challengeService = ReversiaChallengeService(firestore);
+    final pvpService = ReversiaPvpGameService(firestore);
+    final notificationService = NotificationService(firestore: firestore);
+
+    await pumpScreen(
+      tester,
+      challengeService: challengeService,
+      pvpService: pvpService,
+      notificationService: notificationService,
+      uid: 'host-uid',
+    );
+    await tester.tap(find.text('コードを発行する'));
+    await waitForAsyncWork(tester);
+    final codeDoc =
+        (await firestore.collection('reversia_challenge_codes').get()).docs.single;
+
+    await challengeService.joinChallenge(
+      code: codeDoc.id,
+      guestUid: 'guest-uid',
+      guestDisplayName: 'Bob',
+    );
+    await waitForAsyncWork(tester);
+    await waitForAsyncWork(tester);
+
+    final notifications = await notificationService.getNotifications('guest-uid');
+    expect(notifications, hasLength(1));
+    expect(notifications.single.type, 'pvp_challenge');
   });
 }
