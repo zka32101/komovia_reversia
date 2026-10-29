@@ -117,6 +117,35 @@ void main() {
     expect(find.text('投了する'), findsNothing);
   });
 
+  testWidgets('shows no review button while the game is still active', (
+    tester,
+  ) async {
+    final firestore = FakeFirebaseFirestore();
+    final service = ReversiaPvpGameService(firestore);
+    final gameId = await seedGame(service);
+
+    await pumpScreen(tester, gameId: gameId, service: service, uid: 'first-uid');
+
+    expect(find.text('対局を振り返る'), findsNothing);
+  });
+
+  testWidgets('shows a review button once finished and opens ReversiaGameReviewScreen', (
+    tester,
+  ) async {
+    final firestore = FakeFirebaseFirestore();
+    final service = ReversiaPvpGameService(firestore);
+    final gameId = await seedGame(service);
+    await service.resign(gameId: gameId, uid: 'second-uid');
+
+    await pumpScreen(tester, gameId: gameId, service: service, uid: 'first-uid');
+    expect(find.text('対局を振り返る'), findsOneWidget);
+
+    await tester.tap(find.text('対局を振り返る'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('対局の振り返り'), findsOneWidget);
+  });
+
   testWidgets('shows a spectator view for a non-participant uid', (
     tester,
   ) async {

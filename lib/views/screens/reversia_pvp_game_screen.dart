@@ -7,6 +7,7 @@ import '../../models/reversia_pvp_game.dart';
 import '../../services/reversia_pvp_game_service.dart';
 import '../../utils/reversia_move_feedback.dart';
 import '../../viewmodels/index.dart';
+import 'reversia_game_review_screen.dart';
 
 /// PvP対局画面。main.dartの`ReversiaGameScreen`（AI対局）と同じタップ
 /// 操作（駒をタップ→合法手ハイライト→タップで着手）だが、盤面は
@@ -52,6 +53,25 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
     if (color == 1) return Side.first;
     if (color == 2) return Side.second;
     return null;
+  }
+
+  void _openReview(ReversiaPvpGame pvp, Side humanSide) {
+    // movesRecordは一度も着手されていない対局（即投了など）では空文字列
+    // のままなので、`ReversiaPvpGameService._replay`と同じく
+    // `importRecord`を呼ぶ前にガードする。
+    final moves = pvp.movesRecord.isEmpty
+        ? const <RecordedMove>[]
+        : _game.importRecord(pvp.movesRecord).moves;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReversiaGameReviewScreen(
+          initialPosition: _game.initialPosition(),
+          moves: moves,
+          humanSide: humanSide,
+        ),
+      ),
+    );
   }
 
   void _onTapSquare(
@@ -251,6 +271,14 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
                       child: OutlinedButton(
                         onPressed: () => _confirmResign(uid),
                         child: const Text('投了する'),
+                      ),
+                    ),
+                  if (pvp.isFinished && humanSide != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: OutlinedButton(
+                        onPressed: () => _openReview(pvp, humanSide),
+                        child: const Text('対局を振り返る'),
                       ),
                     ),
                   if (pvp.canClaimAbandonmentForfeit(
