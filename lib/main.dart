@@ -10,6 +10,7 @@ import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 
 import 'firebase_options.dart';
+import 'services/game_save_service.dart';
 import 'services/onboarding_service.dart';
 import 'utils/reversia_move_feedback.dart';
 import 'viewmodels/index.dart';
@@ -123,8 +124,8 @@ class _RootScreenState extends ConsumerState<_RootScreen> {
       return OnboardingScreen(onFinished: _onOnboardingFinished);
     }
     return HomeScreen(
-      onPlayReversia: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const ReversiaGameScreen()),
+      onPlayReversia: ({bool resume = false}) => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => ReversiaGameScreen(resume: resume)),
       ),
     );
   }
@@ -136,11 +137,40 @@ class _RootScreenState extends ConsumerState<_RootScreen> {
 /// highlight), tap a destination to move; the AI replies automatically
 /// after a short delay once the position is its turn.
 class ReversiaGameScreen extends ConsumerStatefulWidget {
-  const ReversiaGameScreen({super.key});
+  const ReversiaGameScreen({
+    super.key,
+    this.resume = false,
+    GameSaveServiceLike? saveService,
+  }) : saveService = saveService ?? const _NewGameSaveService();
+
+  /// trueなら、`GameSaveService`に保存された進行中の対局（あれば）を
+  /// 初期局面から着手を再生して復元する。falseなら常に新規対局から
+  /// 始める（既存の挙動そのまま）。
+  final bool resume;
+  final GameSaveServiceLike saveService;
 
   @override
   ConsumerState<ReversiaGameScreen> createState() =>
       _ReversiaGameScreenState();
+}
+
+/// `const`コンストラクタのデフォルト引数で使うための薄いラッパー -
+/// `GameSaveService()`自体は非const（SharedPreferencesの実プラグインを
+/// 内部で呼ぶだけで、コンストラクタ自体はconstにできる特別な理由は無い
+/// が、`ReversiaGameScreen`のデフォルトコンストラクタをconstのまま保てる
+/// よう、同じ役割を持つconstなラッパーを介す）。
+class _NewGameSaveService implements GameSaveServiceLike {
+  const _NewGameSaveService();
+
+  @override
+  Future<String?> loadInProgressGame() => GameSaveService().loadInProgressGame();
+
+  @override
+  Future<void> saveInProgressGame(String movesRecord) =>
+      GameSaveService().saveInProgressGame(movesRecord);
+
+  @override
+  Future<void> clearInProgressGame() => GameSaveService().clearInProgressGame();
 }
 
 class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
@@ -167,6 +197,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
   void initState() {
     super.initState();
     _historyKeys.add(_game.positionKey(_position));
+    if (widget.resume) _loadSavedGame();
   }
 
   @override
@@ -175,8 +206,44 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     super.dispose();
   }
 
+  /// 保存済みの着手レコードを初期局面から再生して局面・履歴・AIの番を
+  /// 復元する。保存が無い、または壊れている場合は何もしない（新規対局の
+  /// まま進める）。
+  Future<void> _loadSavedGame() async {
+    final saved = await widget.saveService.loadInProgressGame();
+    if (saved == null || saved.isEmpty || !mounted) return;
+
+    try {
+      final record = _game.importRecord(saved);
+      var position = _game.initialPosition();
+      final historyKeys = [_game.positionKey(position)];
+      Move? lastMove;
+      for (final m in record.moves) {
+        position = _game.apply(position, m.move, historyKeys: historyKeys);
+        historyKeys.add(_game.positionKey(position));
+        lastMove = m.move;
+      }
+      if (!mounted) return;
+      setState(() {
+        _position = position;
+        _historyKeys
+          ..clear()
+          ..addAll(historyKeys);
+        _moveRecord
+          ..clear()
+          ..addAll(record.moves);
+        _lastMove = lastMove;
+      });
+      _maybeScheduleAiMove();
+    } catch (_) {
+      // 壊れた保存データは捨てて新規対局のまま進める。
+      await widget.saveService.clearInProgressGame();
+    }
+  }
+
   void _newGame() {
     _aiMoveTimer?.cancel();
+    widget.saveService.clearInProgressGame();
     setState(() {
       _position = _game.initialPosition();
       _initialPosition = _position;
@@ -213,6 +280,13 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     final result = _result;
     if (!result.isOngoing) {
       ref.read(updateReversiaRatingAfterGameProvider)(result, _aiLevel);
+      widget.saveService.clearInProgressGame();
+    } else {
+      widget.saveService.saveInProgressGame(
+        _game.exportRecord(
+          GameRecord(gameId: 'local', moves: _moveRecord, result: result),
+        ),
+      );
     }
     _maybeScheduleAiMove();
   }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:komovia_reversia/services/direct_message_service.dart';
 import 'package:komovia_reversia/services/friend_service.dart';
+import 'package:komovia_reversia/services/game_save_service.dart';
 import 'package:komovia_reversia/services/leaderboard_service.dart';
 import 'package:komovia_reversia/services/notification_service.dart';
 import 'package:komovia_reversia/services/premium_entitlement_service.dart';
@@ -12,6 +13,7 @@ import 'package:komovia_reversia/services/tournament_service.dart';
 import 'package:komovia_reversia/viewmodels/auth_provider.dart';
 import 'package:komovia_reversia/viewmodels/direct_message_provider.dart';
 import 'package:komovia_reversia/viewmodels/friend_provider.dart';
+import 'package:komovia_reversia/viewmodels/game_save_provider.dart';
 import 'package:komovia_reversia/viewmodels/leaderboard_provider.dart';
 import 'package:komovia_reversia/viewmodels/notification_provider.dart';
 import 'package:komovia_reversia/viewmodels/purchase_provider.dart';
@@ -28,6 +30,21 @@ import 'package:komovia_reversia/views/screens/reversia_pvp_games_list_screen.da
 import 'package:komovia_reversia/views/screens/settings_screen.dart';
 import 'package:komovia_reversia/views/screens/tournament_screen.dart';
 
+class _FakeGameSaveService implements GameSaveServiceLike {
+  _FakeGameSaveService({this.saved});
+
+  String? saved;
+
+  @override
+  Future<String?> loadInProgressGame() async => saved;
+
+  @override
+  Future<void> saveInProgressGame(String movesRecord) async => saved = movesRecord;
+
+  @override
+  Future<void> clearInProgressGame() async => saved = null;
+}
+
 void main() {
   // real Firebase providers (notifications/leaderboard/PvP list) all take
   // an injectable FirebaseFirestore, so every pump here shares one fake
@@ -36,7 +53,8 @@ void main() {
   Future<void> pumpHome(
     WidgetTester tester, {
     String? uid,
-    VoidCallback? onPlayReversia,
+    void Function({bool resume})? onPlayReversia,
+    GameSaveServiceLike? gameSaveService,
   }) async {
     final firestore = FakeFirebaseFirestore();
     await tester.pumpWidget(
@@ -57,9 +75,11 @@ void main() {
               .overrideWithValue(TournamentService(firestore: firestore)),
           premiumEntitlementServiceProvider
               .overrideWithValue(PremiumEntitlementService(firestore: firestore)),
+          if (gameSaveService != null)
+            gameSaveServiceProvider.overrideWithValue(gameSaveService),
         ],
         child: MaterialApp(
-          home: HomeScreen(onPlayReversia: onPlayReversia ?? () {}),
+          home: HomeScreen(onPlayReversia: onPlayReversia ?? ({bool resume = false}) {}),
         ),
       ),
     );
@@ -103,14 +123,49 @@ void main() {
     expect(find.byIcon(Icons.mail_outline), findsOneWidget);
   });
 
-  testWidgets('tapping プレイ invokes onPlayReversia', (tester) async {
-    var tapped = false;
-    await pumpHome(tester, uid: null, onPlayReversia: () => tapped = true);
+  testWidgets('tapping プレイ invokes onPlayReversia with resume: false', (tester) async {
+    bool? resumeArg;
+    await pumpHome(
+      tester,
+      uid: null,
+      onPlayReversia: ({bool resume = false}) => resumeArg = resume,
+    );
 
     await tester.tap(find.text('プレイ'));
     await tester.pump();
 
-    expect(tapped, isTrue);
+    expect(resumeArg, isFalse);
+  });
+
+  testWidgets('hides 続きから when there is no saved game', (tester) async {
+    await pumpHome(
+      tester,
+      uid: null,
+      gameSaveService: _FakeGameSaveService(),
+    );
+    await tester.pump();
+
+    expect(find.text('続きから'), findsNothing);
+  });
+
+  testWidgets('shows 続きから when a game is saved, invoking onPlayReversia with resume: true', (
+    tester,
+  ) async {
+    bool? resumeArg;
+    await pumpHome(
+      tester,
+      uid: null,
+      gameSaveService: _FakeGameSaveService(saved: 'local\nongoing,,'),
+      onPlayReversia: ({bool resume = false}) => resumeArg = resume,
+    );
+    await tester.pump();
+
+    expect(find.text('続きから'), findsOneWidget);
+
+    await tester.tap(find.text('続きから'));
+    await tester.pump();
+
+    expect(resumeArg, isTrue);
   });
 
   testWidgets('tapping 今日の1局 opens PuzzleScreen', (tester) async {
@@ -242,7 +297,7 @@ void main() {
           premiumEntitlementServiceProvider
               .overrideWithValue(PremiumEntitlementService(firestore: firestore)),
         ],
-        child: MaterialApp(home: HomeScreen(onPlayReversia: () {})),
+        child: MaterialApp(home: HomeScreen(onPlayReversia: ({bool resume = false}) {})),
       ),
     );
     await tester.pump();

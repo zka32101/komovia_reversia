@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 import 'package:komovia_reversia/main.dart';
+import 'package:komovia_reversia/services/game_save_service.dart';
 import 'package:komovia_reversia/viewmodels/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -149,5 +151,94 @@ void main() {
     // the player's turn.
     expect(find.text('あなたの番です'), findsOneWidget);
     expect(find.byKey(const Key('reversia_board_gesture_detector')), findsOneWidget);
+  });
+
+  group('game save/resume', () {
+    testWidgets('a move persists an in-progress save, and 新しい対局 clears it', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [currentUidProvider.overrideWithValue(null)],
+          child: const KomoviaReversiaApp(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await openGameFromHome(tester);
+
+      expect(await GameSaveService().loadInProgressGame(), isNull);
+
+      await tester.tapAt(squareCenter(tester, 0, 0));
+      await tester.pump();
+      await tester.tapAt(squareCenter(tester, 0, 1));
+      await tester.pump();
+
+      final saved = await GameSaveService().loadInProgressGame();
+      expect(saved, isNotNull);
+      expect(saved, isNotEmpty);
+
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.pump();
+
+      expect(await GameSaveService().loadInProgressGame(), isNull);
+    });
+
+    testWidgets('resume: true replays a saved game back to the same board state', (
+      tester,
+    ) async {
+      final game = ReversiaGame();
+      final initial = game.initialPosition();
+      final historyKeys = [game.positionKey(initial)];
+      final move = game
+          .legalMoves(initial, historyKeys: historyKeys)
+          .whereType<BoardMove>()
+          .first;
+      final afterMove = game.apply(initial, move, historyKeys: historyKeys);
+      final record = GameRecord(
+        gameId: 'local',
+        moves: [RecordedMove(number: 1, side: Side.first, move: move)],
+        result: GameResult.ongoing,
+      );
+      await GameSaveService().saveInProgressGame(game.exportRecord(record));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [currentUidProvider.overrideWithValue(null)],
+          child: MaterialApp(home: ReversiaGameScreen(resume: true)),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.byKey(const Key('reversia_board_gesture_detector')),
+        findsOneWidget,
+      );
+      // 保存された1手を再生した局面になっているので、着手済みの升は
+      // もう「自分の駒」ではない（afterMoveのsideToMoveが元と逆になる）。
+      expect(afterMove.sideToMove, isNot(initial.sideToMove));
+    });
+
+    testWidgets('a broken save is discarded and the game starts fresh', (
+      tester,
+    ) async {
+      await GameSaveService().saveInProgressGame('not a valid record');
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [currentUidProvider.overrideWithValue(null)],
+          child: MaterialApp(home: ReversiaGameScreen(resume: true)),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('あなたの番です'), findsOneWidget);
+      expect(await GameSaveService().loadInProgressGame(), isNull);
+    });
   });
 }

@@ -4,6 +4,7 @@ export 'achievement_provider.dart';
 export 'auth_provider.dart';
 export 'direct_message_provider.dart';
 export 'friend_provider.dart';
+export 'game_save_provider.dart';
 export 'leaderboard_provider.dart';
 export 'notification_provider.dart';
 export 'reversia_challenge_provider.dart';
