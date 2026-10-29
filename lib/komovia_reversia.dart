@@ -17,5 +17,6 @@ export 'src/reversia_game.dart';
 export 'src/reversia_game_analysis.dart';
 export 'src/reversia_handicap_rule.dart';
 export 'src/reversia_position.dart';
+export 'src/reversia_notation.dart';
 export 'src/reversia_puzzle.dart';
 export 'src/reversia_share.dart';
