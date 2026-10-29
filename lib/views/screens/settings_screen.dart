@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../services/avatar_preferences.dart';
 import '../../services/daily_reminder_preferences.dart';
 import '../../services/local_notification_service.dart';
 import '../../services/sound_feedback_preferences.dart';
+import '../../src/reversia_avatar.dart';
 import '../../utils/reversia_move_feedback.dart';
 import 'how_to_play_screen.dart';
 import 'legal_document_screen.dart';
@@ -13,8 +15,10 @@ import 'paywall_screen.dart';
 /// `local_notification_service.dart`から移植したデイリーリマインダー
 /// （「今日の1局」を知らせる端末ローカル通知）のオン/オフ・時刻設定、
 /// project-015の`customization_provider.dart`から移植した着手フィード
-/// バック（効果音・触覚）のオン/オフ設定を持つ。GoEnのSettingsScreenの
-/// ような大きな画面ではなく最小限の構成のまま。
+/// バック（効果音・触覚）のオン/オフ設定、project-015の
+/// `avatars_provider.dart`から移植したプレイヤーアバター選択（絵文字を
+/// 選ぶだけの最小構成 - `reversia_avatar.dart`参照）を持つ。GoEnの
+/// SettingsScreenのような大きな画面ではなく最小限の構成のまま。
 class SettingsScreen extends StatefulWidget {
   SettingsScreen({
     super.key,
@@ -22,15 +26,18 @@ class SettingsScreen extends StatefulWidget {
     LocalNotificationServiceLike? notificationService,
     DailyReminderPreferencesLike? preferences,
     SoundFeedbackPreferencesLike? soundFeedbackPreferences,
+    AvatarPreferencesLike? avatarPreferences,
   })  : notificationService = notificationService ?? const _DefaultNotificationService(),
         preferences = preferences ?? DailyReminderPreferences(),
         soundFeedbackPreferences =
-            soundFeedbackPreferences ?? SoundFeedbackPreferences();
+            soundFeedbackPreferences ?? SoundFeedbackPreferences(),
+        avatarPreferences = avatarPreferences ?? AvatarPreferences();
 
   final String? uid;
   final LocalNotificationServiceLike notificationService;
   final DailyReminderPreferencesLike preferences;
   final SoundFeedbackPreferencesLike soundFeedbackPreferences;
+  final AvatarPreferencesLike avatarPreferences;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -42,6 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _reminderMinute = DailyReminderPreferences.defaultMinute;
   bool _loaded = false;
   bool _feedbackEnabled = true;
+  ReversiaAvatar _avatar = ReversiaAvatar.defaultAvatar;
 
   @override
   void initState() {
@@ -54,14 +62,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final hour = await widget.preferences.getHour();
     final minute = await widget.preferences.getMinute();
     final feedbackEnabled = await widget.soundFeedbackPreferences.isEnabled();
+    final avatar = await widget.avatarPreferences.getAvatar();
     if (!mounted) return;
     setState(() {
       _reminderEnabled = enabled;
       _reminderHour = hour;
       _reminderMinute = minute;
       _feedbackEnabled = feedbackEnabled;
+      _avatar = avatar;
       _loaded = true;
     });
+  }
+
+  Future<void> _pickAvatar() async {
+    final selected = await showDialog<ReversiaAvatar>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('アバターを選ぶ'),
+        children: [
+          for (final avatar in ReversiaAvatar.all)
+            RadioListTile<ReversiaAvatar>(
+              title: Text('${avatar.emoji}  ${avatar.label}'),
+              value: avatar,
+              groupValue: _avatar,
+              onChanged: (v) => Navigator.pop(ctx, v),
+            ),
+        ],
+      ),
+    );
+    if (selected == null) return;
+    await widget.avatarPreferences.setAvatar(selected);
+    if (mounted) setState(() => _avatar = selected);
   }
 
   Future<void> _setFeedbackEnabled(bool value) async {
@@ -121,6 +152,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(title: const Text('設定')),
       body: ListView(
         children: [
+          if (_loaded)
+            ListTile(
+              leading: Text(_avatar.emoji, style: const TextStyle(fontSize: 28)),
+              title: const Text('アバター'),
+              subtitle: Text(_avatar.label),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: _pickAvatar,
+            ),
           if (widget.uid != null)
             ListTile(
               leading: const Icon(Icons.workspace_premium_outlined),
