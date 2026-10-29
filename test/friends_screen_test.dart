@@ -2,8 +2,11 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:komovia_reversia/services/direct_message_service.dart';
 import 'package:komovia_reversia/services/friend_service.dart';
+import 'package:komovia_reversia/viewmodels/direct_message_provider.dart';
 import 'package:komovia_reversia/viewmodels/friend_provider.dart';
+import 'package:komovia_reversia/views/screens/chat_screen.dart';
 import 'package:komovia_reversia/views/screens/friends_screen.dart';
 
 void main() {
@@ -16,7 +19,11 @@ void main() {
     final service = FriendService(firestore: firestore);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [friendServiceProvider.overrideWithValue(service)],
+        overrides: [
+          friendServiceProvider.overrideWithValue(service),
+          directMessageServiceProvider
+              .overrideWithValue(DirectMessageService(firestore: firestore)),
+        ],
         child: MaterialApp(
           home: FriendsScreen(uid: uid, displayName: displayName),
         ),
@@ -103,5 +110,21 @@ void main() {
     final pending = await service.pendingStream('u2').first;
     expect(pending, hasLength(1));
     expect(pending.first.friendUid, 'u1');
+  });
+
+  testWidgets('tapping the message icon on an accepted friend opens ChatScreen', (tester) async {
+    final service = await pumpFriends(tester, uid: 'u1', displayName: 'Alice');
+    await service.sendRequest('u2', 'Bob', 'u1');
+    await service.acceptRequest('u1', 'u2');
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.byIcon(Icons.message_outlined));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final chatScreen = tester.widget<ChatScreen>(find.byType(ChatScreen));
+    expect(chatScreen.friendUid, 'u2');
+    expect(chatScreen.friendDisplayName, 'Bob');
   });
 }
