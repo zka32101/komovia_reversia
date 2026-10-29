@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
 
 import '../services/friend_service.dart';
+import 'notification_provider.dart';
 
 final friendServiceProvider = Provider<FriendService>((ref) => FriendService());
 
@@ -14,10 +15,23 @@ final pendingFriendsStreamProvider =
   (ref, uid) => ref.watch(friendServiceProvider).pendingStream(uid),
 );
 
+/// 送信成功時、受信者へ`friend_request`通知を送る（komovia_goの
+/// `addFriendProvider`と同じ役割）。通知の送信に失敗しても申請自体は
+/// 成立しているため、best-effortで握りつぶす。
 final sendFriendRequestProvider = Provider(
-  (ref) => (String fromUid, String fromDisplayName, String toUid) => ref
-      .read(friendServiceProvider)
-      .sendRequest(fromUid, fromDisplayName, toUid),
+  (ref) => (String fromUid, String fromDisplayName, String toUid) async {
+    await ref.read(friendServiceProvider).sendRequest(fromUid, fromDisplayName, toUid);
+    try {
+      await ref.read(notificationServiceProvider).send(
+            uid: toUid,
+            title: '$fromDisplayNameさんからフレンド申請が届きました',
+            body: '「フレンド」→「招待待ち」タブで確認できます',
+            type: 'friend_request',
+          );
+    } catch (_) {
+      // best-effort: 申請自体は既に成立している
+    }
+  },
 );
 
 final acceptFriendRequestProvider = Provider(
