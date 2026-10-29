@@ -241,4 +241,76 @@ void main() {
       expect(await GameSaveService().loadInProgressGame(), isNull);
     });
   });
+
+  group('handicap', () {
+    testWidgets('shows all handicap options and starts a fresh game on selection', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [currentUidProvider.overrideWithValue(null)],
+          child: const KomoviaReversiaApp(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await openGameFromHome(tester);
+
+      // 対局を1手進めておき、ハンディキャップ選択が新規対局として
+      // 始め直すことを後で確認できるようにする。
+      await tester.tapAt(squareCenter(tester, 0, 0));
+      await tester.pump();
+      await tester.tapAt(squareCenter(tester, 0, 1));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.balance));
+      await tester.pumpAndSettle();
+
+      expect(find.text('なし'), findsOneWidget);
+      for (final rule in ReversiaHandicapRule.all) {
+        expect(find.text(rule.label), findsOneWidget);
+      }
+
+      await tester.tap(find.text('二枚落ち'));
+      await tester.pumpAndSettle();
+
+      // ハンディキャップ選択は常に新規対局として始め直す。
+      expect(find.text('あなたの番です'), findsOneWidget);
+      // ハンディキャップ対局は保存データの再生前提（標準局面からの再生）
+      // と矛盾するため、着手してもGameSaveServiceには保存しない。
+      await tester.tapAt(squareCenter(tester, 0, 0));
+      await tester.pump();
+      await tester.tapAt(squareCenter(tester, 0, 1));
+      await tester.pump();
+      expect(await GameSaveService().loadInProgressGame(), isNull);
+    });
+
+    testWidgets('picking なし after a handicap returns to the standard position', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [currentUidProvider.overrideWithValue(null)],
+          child: const KomoviaReversiaApp(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await openGameFromHome(tester);
+
+      await tester.tap(find.byIcon(Icons.balance));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('六枚落ち'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.balance));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('なし'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('あなたの番です'), findsOneWidget);
+    });
+  });
 }

@@ -180,7 +180,17 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
   final _engine = ReversiaEngine();
   final _renderer = ReversiaBoardRenderer();
 
-  late ReversiaPosition _position = _game.initialPosition();
+  /// 選択中のハンディキャップ（無しならnull）。`ReversiaHandicapRule`自体は
+  /// komovia_coreの`HandicapRule`インターフェースを実装済みだったが、
+  /// どの画面からも呼ばれていなかった（project-015からの移植漏れ）。
+  ReversiaHandicapRule? _handicap;
+
+  ReversiaPosition get _freshInitialPosition {
+    final standard = _game.initialPosition();
+    return _handicap?.apply(standard) ?? standard;
+  }
+
+  late ReversiaPosition _position = _freshInitialPosition;
   late ReversiaPosition _initialPosition = _position;
   final List<Object> _historyKeys = [];
   final List<RecordedMove> _moveRecord = [];
@@ -245,7 +255,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     _aiMoveTimer?.cancel();
     widget.saveService.clearInProgressGame();
     setState(() {
-      _position = _game.initialPosition();
+      _position = _freshInitialPosition;
       _initialPosition = _position;
       _historyKeys.clear();
       _historyKeys.add(_game.positionKey(_position));
@@ -281,7 +291,11 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     if (!result.isOngoing) {
       ref.read(updateReversiaRatingAfterGameProvider)(result, _aiLevel);
       widget.saveService.clearInProgressGame();
-    } else {
+    } else if (_handicap == null) {
+      // ハンディキャップ対局は`_freshInitialPosition`（標準局面ではない）
+      // から再生する必要があるが、保存データは常に標準局面からの再生を
+      // 前提にしている（`_loadSavedGame`参照）ため、ハンディキャップ対局
+      // は保存しない - 再開不可の対局として割り切る。
       widget.saveService.saveInProgressGame(
         _game.exportRecord(
           GameRecord(gameId: 'local', moves: _moveRecord, result: result),
@@ -365,6 +379,36 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
         _hints = const [];
       });
     }
+  }
+
+  /// ハンディキャップを選び直す（常に新規対局として始め直す - 対局中に
+  /// 内容を変えると現在の局面と矛盾するため）。
+  Future<void> _pickHandicap() async {
+    final selected = await showDialog<ReversiaHandicapRule?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('ハンディキャップ'),
+        children: [
+          RadioListTile<ReversiaHandicapRule?>(
+            title: const Text('なし'),
+            value: null,
+            groupValue: _handicap,
+            onChanged: (v) => Navigator.pop(ctx, v),
+          ),
+          for (final rule in ReversiaHandicapRule.all)
+            RadioListTile<ReversiaHandicapRule?>(
+              title: Text(rule.label),
+              value: rule,
+              groupValue: _handicap,
+              onChanged: (v) => Navigator.pop(ctx, v),
+            ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _handicap = selected);
+    _newGame();
   }
 
   String get _statusText {
@@ -466,6 +510,11 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
               context,
               MaterialPageRoute(builder: (_) => const PuzzleScreen()),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.balance),
+            tooltip: 'ハンディキャップ',
+            onPressed: _pickHandicap,
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
