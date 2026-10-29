@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../services/daily_reminder_preferences.dart';
 import '../../services/local_notification_service.dart';
+import '../../services/sound_feedback_preferences.dart';
+import '../../utils/reversia_move_feedback.dart';
 import 'how_to_play_screen.dart';
 import 'legal_document_screen.dart';
 import 'paywall_screen.dart';
@@ -9,21 +11,26 @@ import 'paywall_screen.dart';
 /// 設定画面 - 利用規約・プライバシーポリシー・プレミアムサポーター
 /// （サインイン時のみ）への入口に加え、project-015の
 /// `local_notification_service.dart`から移植したデイリーリマインダー
-/// （「今日の1局」を知らせる端末ローカル通知）のオン/オフ・時刻設定を
-/// 持つ。GoEnのSettingsScreenのような大きな画面ではなく最小限の構成の
-/// まま。
+/// （「今日の1局」を知らせる端末ローカル通知）のオン/オフ・時刻設定、
+/// project-015の`customization_provider.dart`から移植した着手フィード
+/// バック（効果音・触覚）のオン/オフ設定を持つ。GoEnのSettingsScreenの
+/// ような大きな画面ではなく最小限の構成のまま。
 class SettingsScreen extends StatefulWidget {
   SettingsScreen({
     super.key,
     this.uid,
     LocalNotificationServiceLike? notificationService,
     DailyReminderPreferencesLike? preferences,
+    SoundFeedbackPreferencesLike? soundFeedbackPreferences,
   })  : notificationService = notificationService ?? const _DefaultNotificationService(),
-        preferences = preferences ?? DailyReminderPreferences();
+        preferences = preferences ?? DailyReminderPreferences(),
+        soundFeedbackPreferences =
+            soundFeedbackPreferences ?? SoundFeedbackPreferences();
 
   final String? uid;
   final LocalNotificationServiceLike notificationService;
   final DailyReminderPreferencesLike preferences;
+  final SoundFeedbackPreferencesLike soundFeedbackPreferences;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -34,6 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _reminderHour = DailyReminderPreferences.defaultHour;
   int _reminderMinute = DailyReminderPreferences.defaultMinute;
   bool _loaded = false;
+  bool _feedbackEnabled = true;
 
   @override
   void initState() {
@@ -45,13 +53,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final enabled = await widget.preferences.isEnabled();
     final hour = await widget.preferences.getHour();
     final minute = await widget.preferences.getMinute();
+    final feedbackEnabled = await widget.soundFeedbackPreferences.isEnabled();
     if (!mounted) return;
     setState(() {
       _reminderEnabled = enabled;
       _reminderHour = hour;
       _reminderMinute = minute;
+      _feedbackEnabled = feedbackEnabled;
       _loaded = true;
     });
+  }
+
+  Future<void> _setFeedbackEnabled(bool value) async {
+    await widget.soundFeedbackPreferences.setEnabled(value);
+    reversiaFeedbackEnabled = value;
+    if (mounted) setState(() => _feedbackEnabled = value);
   }
 
   String get _formattedTime =>
@@ -131,6 +147,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: _pickReminderTime,
               ),
+            SwitchListTile(
+              secondary: const Icon(Icons.volume_up_outlined),
+              title: const Text('着手の効果音・バイブ'),
+              subtitle: Text(_feedbackEnabled ? 'オン' : 'オフ'),
+              value: _feedbackEnabled,
+              onChanged: _setFeedbackEnabled,
+            ),
           ],
           ListTile(
             leading: const Icon(Icons.help_outline),

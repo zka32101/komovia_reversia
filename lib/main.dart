@@ -13,6 +13,7 @@ import 'firebase_options.dart';
 import 'services/board_theme_preferences.dart';
 import 'services/game_save_service.dart';
 import 'services/onboarding_service.dart';
+import 'services/sound_feedback_preferences.dart';
 import 'utils/reversia_move_feedback.dart';
 import 'viewmodels/index.dart';
 import 'views/screens/home_screen.dart';
@@ -93,6 +94,9 @@ class _RootScreenState extends ConsumerState<_RootScreen> {
     _ensureSignedIn();
     _onboardingService.hasCompletedOnboarding().then((completed) {
       if (mounted) setState(() => _hasCompletedOnboarding = completed);
+    });
+    SoundFeedbackPreferences().isEnabled().then((enabled) {
+      reversiaFeedbackEnabled = enabled;
     });
   }
 
