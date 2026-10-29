@@ -108,6 +108,35 @@ void main() {
     expect(find.text('あなたの番です'), findsOneWidget);
   });
 
+  testWidgets('盤面を反転 flips tap coordinates so the same move still works', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [currentUidProvider.overrideWithValue(null)],
+        child: const KomoviaReversiaApp(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    await openGameFromHome(tester);
+
+    await tester.tap(find.byKey(const Key('reversia_flip_board_button')));
+    await tester.pump();
+
+    // 反転表示では画面上の見た目の位置が180度回るので、論理座標
+    // (0,0)/(0,1)のタップは画面上ではsquareCenter(5,5)/squareCenter(5,4)
+    // の位置になる。
+    await tester.tapAt(squareCenter(tester, 5, 5));
+    await tester.pump();
+    await tester.tapAt(squareCenter(tester, 5, 4));
+    await tester.pump();
+
+    expect(find.text('AIが考えています…'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(find.text('あなたの番です'), findsOneWidget);
+  });
+
   testWidgets('"新しい対局" resets to the initial position after moves have been played', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

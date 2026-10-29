@@ -29,12 +29,20 @@ class ReversiaBoardPainter extends CustomPainter {
   final Square? selected;
   final ReversiaBoardTheme theme;
 
+  /// 盤面を180度回転して描く - 後手視点（下側に自分の駒が来るように）
+  /// でプレイしたい場合向け。局面・着手判定のモデルは一切変わらず、
+  /// 描画位置（と[ReversiaBoardRenderer.squareAt]の逆変換）だけが影響
+  /// を受ける - competitor Othello/Reversiアプリによくある「盤面を
+  /// 反転して見る」機能。
+  final bool flipped;
+
   const ReversiaBoardPainter({
     required this.position,
     this.lastMove,
     this.hints = const [],
     this.selected,
     this.theme = ReversiaBoardTheme.classic,
+    this.flipped = false,
   });
 
   @override
@@ -50,7 +58,9 @@ class ReversiaBoardPainter extends CustomPainter {
     for (var rank = 0; rank < boardSize; rank++) {
       for (var file = 0; file < boardSize; file++) {
         final square = Square(file, rank);
-        final rect = Rect.fromLTWH(file * cell, rank * cell, cell, cell);
+        final displayFile = flipped ? boardSize - 1 - file : file;
+        final displayRank = flipped ? boardSize - 1 - rank : rank;
+        final rect = Rect.fromLTWH(displayFile * cell, displayRank * cell, cell, cell);
 
         final isDark = (file + rank).isEven;
         canvas.drawRect(
@@ -139,6 +149,7 @@ class ReversiaBoardPainter extends CustomPainter {
       oldDelegate.lastMove != lastMove ||
       oldDelegate.selected != selected ||
       oldDelegate.theme != theme ||
+      oldDelegate.flipped != flipped ||
       !_sameSquares(oldDelegate.hints, hints);
 
   static bool _sameSquares(List<Square> a, List<Square> b) {

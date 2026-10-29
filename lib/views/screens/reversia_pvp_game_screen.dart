@@ -242,6 +242,9 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
                               ),
                               BoardSize(boardSize, boardSize),
                               position,
+                              // 後手視点では盤面を反転表示するので、タップ
+                              // 判定も同じ向きで逆変換する必要がある。
+                              flipped: humanSide == Side.second,
                             );
                             if (square != null) {
                               _onTapSquare(
@@ -259,6 +262,12 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
                               position,
                               hints: _hints,
                               selected: _selected,
+                              // 両プレイヤーが常に自分の駒を手元（画面下側）
+                              // に見られるよう、後手は盤面を自動で反転する
+                              // - competitor Othello/Reversiアプリによく
+                              // ある「自分視点で見る」機能。観戦中
+                              // (humanSide == null)は反転しない。
+                              flipped: humanSide == Side.second,
                             ),
                           ),
                         );
