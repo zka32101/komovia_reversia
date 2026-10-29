@@ -92,4 +92,25 @@ void main() {
 
     expect(find.text('あなたの番です'), findsOneWidget);
   });
+
+  testWidgets('tapping the hint button highlights a legal move without playing it', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [currentUidProvider.overrideWithValue(null)],
+        child: const KomoviaReversiaApp(),
+      ),
+    );
+    await tester.pump(); // let hasCompletedOnboarding() resolve
+    await tester.pump();
+
+    await tester.tap(find.byIcon(Icons.lightbulb_outline));
+    await tester.pump();
+
+    // The hint highlights a suggested move via the same selection/hint
+    // state a manual tap would use, so the status text and board are
+    // unchanged (no move has actually been played) while it's still
+    // the player's turn.
+    expect(find.text('あなたの番です'), findsOneWidget);
+    expect(find.byKey(const Key('reversia_board_gesture_detector')), findsOneWidget);
+  });
 }

@@ -119,6 +119,36 @@ class ReversiaGameAnalysis {
   }
 }
 
+/// Finds the legal move (among [BoardMove]s only) that [evaluator] scores
+/// highest from [side]'s own perspective after it's applied, at
+/// [position]. Returns `null` if [side] has no legal moves. Shared by
+/// [ReversiaGameAnalyzer] (to find each turn's best alternative) and the
+/// app's own in-game hint feature (to suggest one move without playing
+/// it) — both need the identical "best move by this evaluator" search.
+BoardMove? bestLegalMove(
+  ReversiaGame game,
+  ReversiaEvaluator evaluator,
+  ReversiaPosition position,
+  Side side, {
+  List<Object> historyKeys = const [],
+}) {
+  final legal = game
+      .legalMoves(position, historyKeys: historyKeys)
+      .whereType<BoardMove>();
+
+  BoardMove? best;
+  var bestEval = -(1 << 30);
+  for (final candidate in legal) {
+    final resulting = game.apply(position, candidate, historyKeys: historyKeys);
+    final eval = evaluator.evaluate(resulting, side);
+    if (eval > bestEval) {
+      bestEval = eval;
+      best = candidate;
+    }
+  }
+  return best;
+}
+
 /// Builds a [ReversiaGameAnalysis] for one side by replaying every move
 /// in [moves] and, at each of that side's turns, comparing the move
 /// actually played against every other legal move available at that
