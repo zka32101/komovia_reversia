@@ -203,6 +203,16 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
   /// 変更時に新規対局を始め直す必要は無い。
   int _aiLevel = 2;
 
+  /// trueなら、後手も（AIではなく）同じ端末での手動タップで操作する
+  /// ローカル2人対局 - project-015/kouki-shogiのどちらにも同等機能は
+  /// 無いが、競合Othello/Reversiアプリの多くが標準機能として持つ
+  /// pass-and-playモード。ハンディキャップと同じく、切り替えると手番
+  /// 制御の前提が変わるため常に新規対局として始め直す（`_pickGameMode`
+  /// 参照）。2人対局は保存データの再生（`_loadSavedGame`）がどちら側を
+  /// AIが担うか区別できないため、ハンディキャップ対局と同じ理由で保存
+  /// しない。
+  bool _twoPlayerMode = false;
+
   final _game = ReversiaGame();
   final _engine = ReversiaEngine();
   var _renderer = ReversiaBoardRenderer();
@@ -334,13 +344,16 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     });
     final result = _result;
     if (!result.isOngoing) {
-      ref.read(updateReversiaRatingAfterGameProvider)(result, _aiLevel);
+      if (!_twoPlayerMode) {
+        ref.read(updateReversiaRatingAfterGameProvider)(result, _aiLevel);
+      }
       widget.saveService.clearInProgressGame();
-    } else if (_handicap == null) {
+    } else if (_handicap == null && !_twoPlayerMode) {
       // ハンディキャップ対局は`_freshInitialPosition`（標準局面ではない）
       // から再生する必要があるが、保存データは常に標準局面からの再生を
       // 前提にしている（`_loadSavedGame`参照）ため、ハンディキャップ対局
-      // は保存しない - 再開不可の対局として割り切る。
+      // は保存しない - 再開不可の対局として割り切る。2人対局も同じ理由
+      // （再開時にどちら側をAIが担うか判別できない）で保存しない。
       widget.saveService.saveInProgressGame(
         _game.exportRecord(
           GameRecord(gameId: 'local', moves: _moveRecord, result: result),
@@ -359,7 +372,11 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     if (_moveRecord.isEmpty) return;
     _aiMoveTimer?.cancel();
 
-    final toRemove = _moveRecord.last.side == Side.second ? 2 : 1;
+    // 2人対局では自動応手するAIが存在しないため、常に直前の1手だけを
+    // 取り消す（AI対局では、直前がAIの応手なら自分の着手まで遡って2手
+    // 取り消す）。
+    final toRemove =
+        (!_twoPlayerMode && _moveRecord.last.side == Side.second) ? 2 : 1;
     final remaining =
         (_moveRecord.length - toRemove).clamp(0, _moveRecord.length);
     final newRecord = _moveRecord.sublist(0, remaining);
@@ -437,13 +454,13 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
   /// は着手しない。着手するかどうかは依然プレイヤー自身が選ぶ）。
   void _showHint() {
     if (_aiThinking || !_result.isOngoing) return;
-    if (_position.sideToMove != Side.first) return;
+    if (!_twoPlayerMode && _position.sideToMove != Side.first) return;
 
     final best = bestLegalMove(
       _game,
       ReversiaEvaluator(_game),
       _position,
-      Side.first,
+      _position.sideToMove,
       historyKeys: _historyKeys,
     );
     if (best == null) return;
@@ -455,6 +472,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
   }
 
   void _maybeScheduleAiMove() {
+    if (_twoPlayerMode) return;
     if (!_result.isOngoing) return;
     if (_position.sideToMove != Side.second) return;
     setState(() => _aiThinking = true);
@@ -468,7 +486,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
 
   void _onTapSquare(Square square) {
     if (_aiThinking || !_result.isOngoing) return;
-    if (_position.sideToMove != Side.first) return;
+    if (!_twoPlayerMode && _position.sideToMove != Side.first) return;
 
     if (_selected != null && _hints.contains(square)) {
       _applyMove(BoardMove(from: _selected!, to: square));
@@ -476,7 +494,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     }
 
     final piece = _position.at(square);
-    if (piece != null && piece.owner == Side.first) {
+    if (piece != null && piece.owner == _position.sideToMove) {
       final legal = _game
           .legalMoves(_position, historyKeys: _historyKeys)
           .whereType<BoardMove>()
@@ -521,6 +539,36 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     );
     if (!mounted) return;
     setState(() => _handicap = selected);
+    _newGame();
+  }
+
+  /// 対局モード（AI対局 / 同じ端末での2人対局）を選び直す。ハンディ
+  /// キャップと同じく、切り替えると手番制御の前提が変わるため常に新規
+  /// 対局として始め直す。
+  Future<void> _pickGameMode() async {
+    final selected = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('対局モード'),
+        children: [
+          RadioListTile<bool>(
+            title: const Text('AI対局'),
+            value: false,
+            groupValue: _twoPlayerMode,
+            onChanged: (v) => Navigator.pop(ctx, v),
+          ),
+          RadioListTile<bool>(
+            title: const Text('2人対局（同じ端末）'),
+            value: true,
+            groupValue: _twoPlayerMode,
+            onChanged: (v) => Navigator.pop(ctx, v),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || selected == null) return;
+    setState(() => _twoPlayerMode = selected);
     _newGame();
   }
 
@@ -585,9 +633,15 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     final result = _result;
     if (result.isOngoing) {
       if (_aiThinking) return 'AIが考えています…';
+      if (_twoPlayerMode) {
+        return _position.sideToMove == Side.first ? '先手の番です' : '後手の番です';
+      }
       return _position.sideToMove == Side.first ? 'あなたの番です' : '相手の番です';
     }
     if (result.kind == ResultKind.draw) return '引き分けです';
+    if (_twoPlayerMode) {
+      return result.winner == Side.first ? '先手の勝ちです！' : '後手の勝ちです！';
+    }
     final youWon = result.winner == Side.first;
     return youWon ? 'あなたの勝ちです！' : 'あなたの負けです';
   }
@@ -661,7 +715,9 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
             icon: const Icon(Icons.lightbulb_outline),
             tooltip: 'ヒント',
             onPressed:
-                (_result.isOngoing && !_aiThinking && _position.sideToMove == Side.first)
+                (_result.isOngoing &&
+                        !_aiThinking &&
+                        (_twoPlayerMode || _position.sideToMove == Side.first))
                     ? _showHint
                     : null,
           ),
@@ -687,10 +743,16 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.smart_toy_outlined),
-            tooltip: 'AIの強さ',
-            onPressed: _pickAiLevel,
+            icon: Icon(_twoPlayerMode ? Icons.people_outline : Icons.smart_toy),
+            tooltip: '対局モード',
+            onPressed: _pickGameMode,
           ),
+          if (!_twoPlayerMode)
+            IconButton(
+              icon: const Icon(Icons.smart_toy_outlined),
+              tooltip: 'AIの強さ',
+              onPressed: _pickAiLevel,
+            ),
           IconButton(
             icon: const Icon(Icons.palette_outlined),
             tooltip: '盤の配色',

@@ -420,6 +420,78 @@ void main() {
     });
   });
 
+  group('local two-player mode', () {
+    testWidgets('lets both sides be played by tapping, without AI involvement', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [currentUidProvider.overrideWithValue(null)],
+          child: const KomoviaReversiaApp(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await openGameFromHome(tester);
+
+      await tester.tap(find.byTooltip('対局モード'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('2人対局（同じ端末）'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('先手の番です'), findsOneWidget);
+      // 2人対局ではAIの強さボタンは意味を持たないため非表示になる。
+      expect(find.byTooltip('AIの強さ'), findsNothing);
+
+      // 先手が着手する。
+      await tester.tapAt(squareCenter(tester, 0, 0));
+      await tester.pump();
+      await tester.tapAt(squareCenter(tester, 0, 1));
+      await tester.pump();
+
+      // AIの応手タイマーは一切スケジュールされないので、待っても
+      // 「AIが考えています…」にはならず、すぐに後手の番になる。
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('後手の番です'), findsOneWidget);
+
+      // 後手も同じ画面上のタップで操作できる（後手の駒は盤の反対側、
+      // rank 5の前列にある）。
+      await tester.tapAt(squareCenter(tester, 0, 5));
+      await tester.pump();
+      await tester.tapAt(squareCenter(tester, 0, 4));
+      await tester.pump();
+
+      expect(find.text('先手の番です'), findsOneWidget);
+    });
+
+    testWidgets('switching modes always starts a fresh game', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [currentUidProvider.overrideWithValue(null)],
+          child: const KomoviaReversiaApp(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await openGameFromHome(tester);
+
+      await tester.tapAt(squareCenter(tester, 0, 0));
+      await tester.pump();
+      await tester.tapAt(squareCenter(tester, 0, 1));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('対局モード'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('2人対局（同じ端末）'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('先手の番です'), findsOneWidget);
+      expect(await GameSaveService().loadInProgressGame(), isNull);
+    });
+  });
+
   group('handicap', () {
     testWidgets('shows all handicap options and starts a fresh game on selection', (
       tester,
