@@ -14,5 +14,6 @@ export 'reversia_growth_provider.dart';
 export 'reversia_matching_provider.dart';
 export 'reversia_puzzle_log_provider.dart';
 export 'reversia_pvp_game_provider.dart';
+export 'reversia_weekly_progress_provider.dart';
 export 'purchase_provider.dart';
 export 'tournament_provider.dart';

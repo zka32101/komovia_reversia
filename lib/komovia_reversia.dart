@@ -21,3 +21,4 @@ export 'src/reversia_position.dart';
 export 'src/reversia_notation.dart';
 export 'src/reversia_puzzle.dart';
 export 'src/reversia_share.dart';
+export 'src/reversia_weekly_goal.dart';

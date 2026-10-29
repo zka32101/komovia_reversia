@@ -5,6 +5,7 @@ import '../../viewmodels/index.dart';
 import 'achievements_screen.dart';
 import 'friends_screen.dart';
 import 'growth_screen.dart';
+import 'reversia_weekly_goals_screen.dart';
 import 'leaderboard_screen.dart';
 import 'live_friends_screen.dart';
 import 'message_threads_screen.dart';
@@ -175,6 +176,15 @@ class HomeScreen extends ConsumerWidget {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const GrowthScreen()),
+              ),
+            ),
+            _HomeTile(
+              icon: Icons.flag_outlined,
+              title: '今週の目標',
+              subtitle: '対局数・勝利数・パズルの週替わり目標',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ReversiaWeeklyGoalsScreen()),
               ),
             ),
             _HomeTile(
