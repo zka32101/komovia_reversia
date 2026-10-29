@@ -1,5 +1,6 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/services/premium_entitlement_service.dart';
 
 void main() {
@@ -20,9 +21,11 @@ void main() {
 
     final entitlement = await service.getEntitlement('u1');
     expect(entitlement!.plan, SubscriptionPlan.monthly);
-    expect(entitlement.isActiveAt(DateTime.now()), isTrue);
+    expect(entitlement.isCurrentlyActive(now: DateTime.now()), isTrue);
     expect(
-      entitlement.isActiveAt(DateTime.now().add(const Duration(days: 31))),
+      entitlement.isCurrentlyActive(
+        now: DateTime.now().add(const Duration(days: 31)),
+      ),
       isFalse,
     );
   });
@@ -33,7 +36,9 @@ void main() {
     final entitlement = await service.getEntitlement('u1');
     expect(entitlement!.expiresAt, isNull);
     expect(
-      entitlement.isActiveAt(DateTime.now().add(const Duration(days: 365 * 10))),
+      entitlement.isCurrentlyActive(
+        now: DateTime.now().add(const Duration(days: 365 * 10)),
+      ),
       isTrue,
     );
   });
@@ -55,13 +60,15 @@ void main() {
   });
 
   test('skipIfAlreadyActive still grants when the previous entitlement already expired', () async {
-    await firestore.collection('premium_entitlements').doc('u1').set(
-          PremiumEntitlement(
-            plan: SubscriptionPlan.monthly,
-            startedAt: DateTime.now().subtract(const Duration(days: 60)),
-            expiresAt: DateTime.now().subtract(const Duration(days: 30)),
-          ).toJson(),
-        );
+    await firestore.collection('premium_entitlements').doc('u1').set({
+      'plan': SubscriptionPlan.monthly.name,
+      'startedAt': DateTime.now()
+          .subtract(const Duration(days: 60))
+          .toIso8601String(),
+      'expiresAt': DateTime.now()
+          .subtract(const Duration(days: 30))
+          .toIso8601String(),
+    });
 
     await service.grantEntitlement(
       uid: 'u1',
@@ -71,7 +78,7 @@ void main() {
 
     final entitlement = await service.getEntitlement('u1');
     expect(entitlement!.plan, SubscriptionPlan.annual);
-    expect(entitlement.isActive, isTrue);
+    expect(entitlement.isCurrentlyActive(), isTrue);
   });
 
   test('watchEntitlement reflects the current document', () async {

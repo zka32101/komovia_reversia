@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:komovia_core/komovia_core.dart';
 
 import '../../services/premium_entitlement_service.dart';
 import '../../viewmodels/index.dart';
@@ -18,7 +19,7 @@ class PaywallScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entitlement = ref.watch(premiumEntitlementProvider(uid)).value;
-    final isPremium = entitlement?.isActive ?? false;
+    final isPremium = entitlement?.isCurrentlyActive() ?? false;
 
     return Scaffold(
       appBar: AppBar(title: const Text('プレミアムサポーター')),
@@ -47,7 +48,7 @@ class PaywallScreen extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'すでにサポーターです（${entitlement!.plan.label}）'
+                        'すでにサポーターです（${entitlement!.plan!.label}）'
                         '${entitlement.expiresAt != null ? ' - ${entitlement.expiresAt!.toLocal().toString().split(' ').first}まで有効' : ''}',
                       ),
                     ),

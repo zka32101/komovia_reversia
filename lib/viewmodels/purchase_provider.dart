@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:komovia_core/komovia_core.dart';
 
 import '../services/premium_entitlement_service.dart';
 import 'auth_provider.dart';
@@ -21,7 +22,7 @@ final subscriptionProductProvider =
 /// [uid]の現在のプレミアム権限状態（買い切りなら無期限、月額/年額なら
 /// `expiresAt`を過ぎるとfalseになる）。
 final premiumEntitlementProvider =
-    StreamProvider.family<PremiumEntitlement?, String>((ref, uid) {
+    StreamProvider.family<Entitlement?, String>((ref, uid) {
   return ref.watch(premiumEntitlementServiceProvider).watchEntitlement(uid);
 });
 
@@ -29,7 +30,7 @@ final isPremiumProvider = Provider<bool>((ref) {
   final uid = ref.watch(currentUidProvider);
   if (uid == null) return false;
   final entitlement = ref.watch(premiumEntitlementProvider(uid)).value;
-  return entitlement?.isActive ?? false;
+  return entitlement?.isCurrentlyActive() ?? false;
 });
 
 /// アプリが起動している間、インタラクティブな購入フローとは無関係に
