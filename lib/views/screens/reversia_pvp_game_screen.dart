@@ -5,6 +5,7 @@ import 'package:komovia_reversia/komovia_reversia.dart';
 
 import '../../models/reversia_pvp_game.dart';
 import '../../services/reversia_pvp_game_service.dart';
+import '../../utils/reversia_move_feedback.dart';
 import '../../viewmodels/index.dart';
 
 /// PvP対局画面。main.dartの`ReversiaGameScreen`（AI対局）と同じタップ
@@ -84,7 +85,14 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
       _hints = const [];
     });
     if (matches.isNotEmpty) {
-      _applyMove(matches.first, uid);
+      final move = matches.first;
+      final target = position.at(move.to);
+      if (target != null && target.owner != position.sideToMove) {
+        playReversiaCaptureFeedback();
+      } else {
+        playReversiaMovePlaceFeedback();
+      }
+      _applyMove(move, uid);
     }
   }
 
@@ -93,6 +101,7 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
         await ref.read(applyReversiaPvpMoveProvider)(widget.gameId, uid, move);
     if (!mounted) return;
     if (!applied) {
+      playReversiaIllegalMoveFeedback();
       setState(() => _errorMessage = 'その手は指せません');
     } else {
       setState(() => _errorMessage = null);

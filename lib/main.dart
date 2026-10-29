@@ -11,6 +11,7 @@ import 'package:komovia_reversia/komovia_reversia.dart';
 
 import 'firebase_options.dart';
 import 'services/onboarding_service.dart';
+import 'utils/reversia_move_feedback.dart';
 import 'viewmodels/index.dart';
 import 'views/screens/leaderboard_screen.dart';
 import 'views/screens/notification_screen.dart';
@@ -181,6 +182,12 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
 
   void _applyMove(Move move) {
     final mover = _position.sideToMove;
+    final target = move is BoardMove ? _position.at(move.to) : null;
+    if (target != null && target.owner != mover) {
+      playReversiaCaptureFeedback();
+    } else {
+      playReversiaMovePlaceFeedback();
+    }
     setState(() {
       _moveRecord.add(RecordedMove(
         number: _moveRecord.length + 1,
