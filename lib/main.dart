@@ -200,6 +200,29 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     );
   }
 
+  /// 競合アプリの多くが標準機能として持つヒント — `ReversiaEvaluator`
+  /// （AI探索・振り返り機能と同じ評価関数）で現局面の最善手を1つ求め、
+  /// 通常のタップ選択と同じ`_selected`/`_hints`でハイライトする（自動で
+  /// は着手しない。着手するかどうかは依然プレイヤー自身が選ぶ）。
+  void _showHint() {
+    if (_aiThinking || !_result.isOngoing) return;
+    if (_position.sideToMove != Side.first) return;
+
+    final best = bestLegalMove(
+      _game,
+      ReversiaEvaluator(_game),
+      _position,
+      Side.first,
+      historyKeys: _historyKeys,
+    );
+    if (best == null) return;
+
+    setState(() {
+      _selected = best.from;
+      _hints = [best.to];
+    });
+  }
+
   void _maybeScheduleAiMove() {
     if (!_result.isOngoing) return;
     if (_position.sideToMove != Side.second) return;
@@ -276,6 +299,14 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
                         ),
               );
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.lightbulb_outline),
+            tooltip: 'ヒント',
+            onPressed:
+                (_result.isOngoing && !_aiThinking && _position.sideToMove == Side.first)
+                    ? _showHint
+                    : null,
           ),
           IconButton(
             icon: const Icon(Icons.leaderboard),

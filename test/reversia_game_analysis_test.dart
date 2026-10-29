@@ -100,6 +100,42 @@ void main() {
       expect(analysis.moveReviews.single.lossVsBest, greaterThan(0));
     });
 
+    test('bestLegalMove returns null when the side has no legal moves', () {
+      // A position with no pieces for Side.first has no legal moves for it.
+      final empty = game.initialPosition().copyWith(
+            cells: List.filled(ReversiaPosition.boardSize * ReversiaPosition.boardSize, null),
+            sideToMove: Side.first,
+          );
+      final best =
+          bestLegalMove(game, ReversiaEvaluator(game), empty, Side.first);
+      expect(best, isNull);
+    });
+
+    test('bestLegalMove picks the evaluator-highest-scoring legal move', () {
+      final position = game.initialPosition();
+      final historyKeys = <Object>[game.positionKey(position)];
+      final evaluator = ReversiaEvaluator(game);
+
+      final best =
+          bestLegalMove(game, evaluator, position, Side.first, historyKeys: historyKeys);
+      expect(best, isNotNull);
+
+      final legal = game
+          .legalMoves(position, historyKeys: historyKeys)
+          .whereType<BoardMove>();
+      final bestEval = evaluator.evaluate(
+        game.apply(position, best!, historyKeys: historyKeys),
+        Side.first,
+      );
+      for (final candidate in legal) {
+        final eval = evaluator.evaluate(
+          game.apply(position, candidate, historyKeys: historyKeys),
+          Side.first,
+        );
+        expect(bestEval, greaterThanOrEqualTo(eval));
+      }
+    });
+
     test('moves by the other side are replayed but not reviewed', () {
       var position = game.initialPosition();
       final historyKeys = <Object>[game.positionKey(position)];
