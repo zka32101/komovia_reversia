@@ -5,8 +5,10 @@ import 'package:komovia_reversia/komovia_reversia.dart';
 /// 対局後の振り返り画面。競合アプリの「棋譜解析」「敗因分析」機能に
 /// 相当 — [ReversiaGameAnalyzer]（評価関数ベースの決定的なローカル解析、
 /// LLMは使わない）で[humanSide]の全着手を最善手と比較し、一手ごとの
-/// 評価と総評を表示する。
-class ReversiaGameReviewScreen extends StatelessWidget {
+/// 評価と総評を表示する。各着手には自分でタグ・メモを付けられる
+/// （[ReversiaMoveAnnotation]参照 - 永続化はせず、この画面を開いている
+/// 間だけ保持する）。
+class ReversiaGameReviewScreen extends StatefulWidget {
   const ReversiaGameReviewScreen({
     super.key,
     required this.initialPosition,
@@ -19,11 +21,86 @@ class ReversiaGameReviewScreen extends StatelessWidget {
   final Side humanSide;
 
   @override
+  State<ReversiaGameReviewScreen> createState() => _ReversiaGameReviewScreenState();
+}
+
+class _ReversiaGameReviewScreenState extends State<ReversiaGameReviewScreen> {
+  final Map<int, ReversiaMoveAnnotation> _annotations = {};
+
+  Future<void> _editAnnotation(int moveNumber) async {
+    final current = _annotations[moveNumber] ?? const ReversiaMoveAnnotation();
+    final controller = TextEditingController(text: current.note);
+    var selectedTag = current.tag;
+
+    final result = await showDialog<ReversiaMoveAnnotation?>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) {
+          return AlertDialog(
+            title: Text('$moveNumber手目のメモ'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final tag in ReversiaMoveTag.values)
+                      ChoiceChip(
+                        label: Text('${tag.emoji} ${tag.label}'),
+                        selected: selectedTag == tag,
+                        onSelected: (selected) =>
+                            setState(() => selectedTag = selected ? tag : null),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: 'メモ'),
+                ),
+              ],
+            ),
+            actions: [
+              if (!current.isEmpty)
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, const ReversiaMoveAnnotation()),
+                  child: const Text('削除'),
+                ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, null),
+                child: const Text('キャンセル'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(
+                  ctx,
+                  ReversiaMoveAnnotation(tag: selectedTag, note: controller.text),
+                ),
+                child: const Text('保存'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (result == null) return;
+    setState(() {
+      if (result.isEmpty) {
+        _annotations.remove(moveNumber);
+      } else {
+        _annotations[moveNumber] = result;
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final analysis = ReversiaGameAnalyzer().analyze(
-      initialPosition: initialPosition,
-      moves: moves,
-      side: humanSide,
+      initialPosition: widget.initialPosition,
+      moves: widget.moves,
+      side: widget.humanSide,
     );
 
     return Scaffold(
@@ -57,7 +134,11 @@ class ReversiaGameReviewScreen extends StatelessWidget {
               child: Text('振り返る着手がありませんでした。'),
             )
           else
-            ...analysis.moveReviews.map((review) => _MoveReviewTile(review)),
+            ...analysis.moveReviews.map((review) => _MoveReviewTile(
+                  review,
+                  annotation: _annotations[review.moveNumber],
+                  onTap: () => _editAnnotation(review.moveNumber),
+                )),
         ],
       ),
     );
@@ -65,9 +146,11 @@ class ReversiaGameReviewScreen extends StatelessWidget {
 }
 
 class _MoveReviewTile extends StatelessWidget {
-  const _MoveReviewTile(this.review);
+  const _MoveReviewTile(this.review, {required this.annotation, required this.onTap});
 
   final ReversiaMoveReview review;
+  final ReversiaMoveAnnotation? annotation;
+  final VoidCallback onTap;
 
   Color _qualityColor(BuildContext context) {
     switch (review.quality) {
@@ -84,14 +167,21 @@ class _MoveReviewTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tag = annotation?.tag;
+    final note = annotation?.note ?? '';
     return ListTile(
+      onTap: onTap,
       leading: CircleAvatar(child: Text('${review.moveNumber}')),
       title: Text(
-        '${reversiaMoveNotation(review.move)}  ${review.quality.label}',
+        '${tag != null ? '${tag.emoji} ' : ''}${reversiaMoveNotation(review.move)}  ${review.quality.label}',
       ),
-      subtitle: review.lossVsBest > 0
-          ? Text('最善手との差: ${review.lossVsBest}点')
-          : null,
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (review.lossVsBest > 0) Text('最善手との差: ${review.lossVsBest}点'),
+          if (note.isNotEmpty) Text(note, style: const TextStyle(fontStyle: FontStyle.italic)),
+        ],
+      ),
       trailing: Icon(Icons.circle, size: 12, color: _qualityColor(context)),
     );
   }
