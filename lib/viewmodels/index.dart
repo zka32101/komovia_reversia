@@ -9,6 +9,7 @@ export 'leaderboard_provider.dart';
 export 'live_friends_provider.dart';
 export 'notification_provider.dart';
 export 'reversia_challenge_provider.dart';
+export 'reversia_difficulty_stats_provider.dart';
 export 'reversia_game_stats_provider.dart';
 export 'reversia_growth_provider.dart';
 export 'reversia_matching_provider.dart';

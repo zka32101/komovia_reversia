@@ -5,6 +5,7 @@ import '../utils/reversia_rating.dart';
 import 'achievement_provider.dart';
 import 'auth_provider.dart';
 import 'leaderboard_provider.dart';
+import 'reversia_difficulty_stats_provider.dart';
 import 'reversia_game_stats_provider.dart';
 import 'reversia_weekly_progress_provider.dart';
 
@@ -47,6 +48,11 @@ final updateReversiaRatingAfterGameProvider =
           );
       await ref.read(reversiaWeeklyProgressServiceProvider).recordGamePlayed(
             uid: uid,
+            won: won,
+          );
+      await ref.read(reversiaDifficultyStatsServiceProvider).recordGame(
+            uid: uid,
+            level: aiLevel,
             won: won,
           );
       if (won) {
