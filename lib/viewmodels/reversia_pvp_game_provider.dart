@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
@@ -127,10 +125,12 @@ final createTournamentReversiaGameProvider = Provider<
   };
 });
 
-/// 終局したPvP対局の結果を標準的なElo式で両対局者のレーティングに反映
-/// する（K=32固定）。komovia_goの`pvp_game_provider.dart`の
-/// `_updateEloRatings`と同じ役割（reversia向け）。失敗はbest-effortで
-/// 握りつぶす — 対局自体は常にこのエラーに関係なく継続できる。
+/// 終局したPvP対局の結果をkomovia_coreの`computeEloDelta`で両対局者の
+/// レーティングに反映する（K=32固定 - AI対局用の`reversia_rating.dart`
+/// はcore既定のK=24だが、PvPはより大きく動かす設計）。komovia_goの
+/// `pvp_game_provider.dart`の`_updateEloRatings`と同じ役割（reversia
+/// 向け）。失敗はbest-effortで握りつぶす — 対局自体は常にこのエラーに
+/// 関係なく継続できる。
 Future<void> _onReversiaPvpGameFinished(
   Ref ref,
   ReversiaPvpGameService service,
@@ -189,12 +189,18 @@ Future<void> _updateReversiaPvpEloRatings(Ref ref, ReversiaPvpGame game) async {
   }
   final secondScore = 1.0 - firstScore;
 
-  final expectedFirst =
-      1.0 / (1.0 + math.pow(10, (secondRating - firstRating) / 400));
-  final expectedSecond = 1.0 - expectedFirst;
-
-  final firstDelta = (kFactor * (firstScore - expectedFirst)).round();
-  final secondDelta = (kFactor * (secondScore - expectedSecond)).round();
+  final firstDelta = computeEloDelta(
+    currentRating: firstRating,
+    opponentRating: secondRating,
+    score: firstScore,
+    kFactor: kFactor,
+  );
+  final secondDelta = computeEloDelta(
+    currentRating: secondRating,
+    opponentRating: firstRating,
+    score: secondScore,
+    kFactor: kFactor,
+  );
 
   await leaderboardService.incrementStats(
     uid: game.firstUid,
