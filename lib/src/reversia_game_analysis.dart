@@ -55,6 +55,13 @@ class ReversiaMoveReview {
   final int evalAfterMove;
   final int evalAfterBestAlternative;
 
+  /// The legal move that produced [evalAfterBestAlternative] - null when
+  /// [move] itself already was that best move (so there's nothing better
+  /// to suggest). Lets the review screen show competitor Othello/Reversi
+  /// apps' common "better move" suggestion on a mistake/blunder, not just
+  /// the point loss.
+  final Move? bestAlternativeMove;
+
   const ReversiaMoveReview({
     required this.moveNumber,
     required this.side,
@@ -62,6 +69,7 @@ class ReversiaMoveReview {
     required this.evalBefore,
     required this.evalAfterMove,
     required this.evalAfterBestAlternative,
+    this.bestAlternativeMove,
   });
 
   /// How many evaluation points worse the played move was than the best
@@ -188,12 +196,16 @@ class ReversiaGameAnalyzer {
       // `apply` below or reporting a misleading zero-loss review.
       if (legal.contains(recorded.move)) {
         var bestEval = -(1 << 30);
+        Move? bestMove;
         var playedEval = bestEval;
         for (final candidate in legal) {
           final resultingPosition =
               _game.apply(position, candidate, historyKeys: historyKeys);
           final candidateEval = _eval.evaluate(resultingPosition, side);
-          if (candidateEval > bestEval) bestEval = candidateEval;
+          if (candidateEval > bestEval) {
+            bestEval = candidateEval;
+            bestMove = candidate;
+          }
           if (candidate == recorded.move) playedEval = candidateEval;
         }
 
@@ -204,6 +216,7 @@ class ReversiaGameAnalyzer {
           evalBefore: evalBefore,
           evalAfterMove: playedEval,
           evalAfterBestAlternative: bestEval,
+          bestAlternativeMove: bestEval > playedEval ? bestMove : null,
         ));
       }
 

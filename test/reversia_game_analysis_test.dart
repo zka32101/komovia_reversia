@@ -60,6 +60,8 @@ void main() {
       for (final review in analysis.moveReviews) {
         expect(review.lossVsBest, 0);
         expect(review.quality, ReversiaMoveQuality.excellent);
+        expect(review.bestAlternativeMove, isNull,
+            reason: 'already-best moves have nothing better to suggest');
       }
     });
 
@@ -98,6 +100,7 @@ void main() {
       );
 
       expect(analysis.moveReviews.single.lossVsBest, greaterThan(0));
+      expect(analysis.moveReviews.single.bestAlternativeMove, best);
     });
 
     test('bestLegalMove returns null when the side has no legal moves', () {

@@ -125,4 +125,41 @@ void main() {
 
     expect(find.text('書いたけど保存しない'), findsNothing);
   });
+
+  testWidgets('a mistake move shows the suggested best move', (tester) async {
+    final game = ReversiaGame();
+    final position = game.initialPosition();
+    final historyKeys = <Object>[game.positionKey(position)];
+    final legal = game.legalMoves(position, historyKeys: historyKeys);
+    final evaluator = ReversiaEvaluator(game);
+
+    Move? best;
+    Move? worst;
+    var bestEval = -(1 << 30);
+    var worstEval = 1 << 30;
+    for (final move in legal) {
+      final resulting = game.apply(position, move, historyKeys: historyKeys);
+      final eval = evaluator.evaluate(resulting, Side.first);
+      if (eval > bestEval) {
+        bestEval = eval;
+        best = move;
+      }
+      if (eval < worstEval) {
+        worstEval = eval;
+        worst = move;
+      }
+    }
+    // 全手が同評価ならテストの前提が崩れるためスキップ。
+    if (best == worst) return;
+
+    await tester.pumpWidget(MaterialApp(
+      home: ReversiaGameReviewScreen(
+        initialPosition: position,
+        moves: [RecordedMove(number: 1, side: Side.first, move: worst!)],
+        humanSide: Side.first,
+      ),
+    ));
+
+    expect(find.textContaining('最善手: ${reversiaMoveNotation(best!)}'), findsOneWidget);
+  });
 }
