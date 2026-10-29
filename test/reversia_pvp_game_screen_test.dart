@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -153,5 +154,58 @@ void main() {
     await tester.pump();
 
     expect(find.text('ログインが必要です'), findsOneWidget);
+  });
+
+  testWidgets(
+      'shows the forfeit-claim button for the waiting player once stale enough',
+      (tester) async {
+    final firestore = FakeFirebaseFirestore();
+    final service = ReversiaPvpGameService(firestore);
+    final gameId = await seedGame(service);
+    // first-uid's turn (createGame default), so second-uid is waiting.
+    await firestore.collection('reversia_pvp_games').doc(gameId).update({
+      'updatedAt': Timestamp.fromDate(
+        DateTime.now().subtract(
+          ReversiaPvpGameService.abandonmentThreshold + const Duration(hours: 1),
+        ),
+      ),
+    });
+
+    await pumpScreen(tester, gameId: gameId, service: service, uid: 'second-uid');
+
+    expect(find.text('放置勝ちを申請する'), findsOneWidget);
+  });
+
+  testWidgets('hides the forfeit-claim button before the threshold elapses',
+      (tester) async {
+    final firestore = FakeFirebaseFirestore();
+    final service = ReversiaPvpGameService(firestore);
+    final gameId = await seedGame(service);
+
+    await pumpScreen(tester, gameId: gameId, service: service, uid: 'second-uid');
+
+    expect(find.text('放置勝ちを申請する'), findsNothing);
+  });
+
+  testWidgets('claiming forfeit ends the game as a win for the claimant',
+      (tester) async {
+    final firestore = FakeFirebaseFirestore();
+    final service = ReversiaPvpGameService(firestore);
+    final gameId = await seedGame(service);
+    await firestore.collection('reversia_pvp_games').doc(gameId).update({
+      'updatedAt': Timestamp.fromDate(
+        DateTime.now().subtract(
+          ReversiaPvpGameService.abandonmentThreshold + const Duration(hours: 1),
+        ),
+      ),
+    });
+
+    await pumpScreen(tester, gameId: gameId, service: service, uid: 'second-uid');
+    await tester.tap(find.text('放置勝ちを申請する'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('申請する'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('相手の放置により、あなたの勝ちです'), findsOneWidget);
   });
 }

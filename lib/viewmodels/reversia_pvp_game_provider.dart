@@ -46,6 +46,20 @@ final resignReversiaPvpGameProvider =
   };
 });
 
+/// 相手が長期間応答していない対局を放置勝ちとして終局させる。
+/// applyMove/resignと同じく、終局したらレーティングを更新する。
+final claimReversiaAbandonmentForfeitProvider =
+    Provider<Future<void> Function(String gameId, String claimantUid)>((ref) {
+  final service = ref.watch(reversiaPvpGameServiceProvider);
+  return (gameId, claimantUid) async {
+    await service.claimAbandonmentForfeit(
+      gameId: gameId,
+      claimantUid: claimantUid,
+    );
+    await _onReversiaPvpGameFinished(ref, service, gameId);
+  };
+});
+
 /// 新しいPvP対局を作成する。
 final createReversiaPvpGameProvider = Provider<
     Future<ReversiaPvpGame> Function({

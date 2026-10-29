@@ -24,7 +24,7 @@ class ReversiaPvpGame {
   final int movesCount;
   final String status; // 'active', 'finished'
   final String? winnerUid;
-  final String? result; // 'resignation', 'victory', 'draw', null(進行中)
+  final String? result; // 'resignation', 'victory', 'draw', 'forfeit', null(進行中)
   final String? matchId; // ReversiaMatchResult.idとの紐付け（あれば）
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -60,6 +60,19 @@ class ReversiaPvpGame {
     final color = playerColorOf(uid);
     if (color == 0) return false;
     return (color == 1) == isFirstTurn;
+  }
+
+  /// [uid]が、相手が長期間応答していない（`updatedAt`からこの期間が
+  /// 経過している）ことを理由に放置勝ちを申請できるか。komovia_goの
+  /// `PvpGame.canClaimAbandonmentForfeit`と同じ役割 - 申請できるのは
+  /// 「待っている側」（手番がまだ来ていない側＝相手が応答していない側）
+  /// のみで、自分自身が応答していない側ではない。
+  bool canClaimAbandonmentForfeit(String uid, {required Duration threshold}) {
+    if (!isActive) return false;
+    if (playerColorOf(uid) == 0) return false;
+    if (isTurnOf(uid)) return false;
+    final lastActivity = updatedAt ?? createdAt;
+    return DateTime.now().difference(lastActivity) >= threshold;
   }
 
   factory ReversiaPvpGame.fromFirestore(

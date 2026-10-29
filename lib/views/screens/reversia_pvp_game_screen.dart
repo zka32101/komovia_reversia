@@ -4,6 +4,7 @@ import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 
 import '../../models/reversia_pvp_game.dart';
+import '../../services/reversia_pvp_game_service.dart';
 import '../../viewmodels/index.dart';
 
 /// PvP対局画面。main.dartの`ReversiaGameScreen`（AI対局）と同じタップ
@@ -120,10 +121,35 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
     await ref.read(resignReversiaPvpGameProvider)(widget.gameId, uid);
   }
 
+  Future<void> _confirmClaimForfeit(String uid) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('放置勝ちを申請しますか？'),
+        content: const Text('相手が長時間応答していません。申請すると、あなたの勝ちとして対局が終了します。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('申請する'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(claimReversiaAbandonmentForfeitProvider)(widget.gameId, uid);
+  }
+
   String _statusText(ReversiaPvpGame pvp, Side? humanSide) {
     if (pvp.isFinished) {
       if (pvp.winnerUid == null) return '対局が終了しました';
       final uid = ref.read(currentUidProvider);
+      if (pvp.result == 'forfeit') {
+        return uid == pvp.winnerUid ? '相手の放置により、あなたの勝ちです' : '放置により、あなたの負けです';
+      }
       if (uid == pvp.winnerUid) return 'あなたの勝ちです！';
       return 'あなたの負けです';
     }
@@ -216,6 +242,28 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
                       child: OutlinedButton(
                         onPressed: () => _confirmResign(uid),
                         child: const Text('投了する'),
+                      ),
+                    ),
+                  if (pvp.canClaimAbandonmentForfeit(
+                    uid,
+                    threshold: ReversiaPvpGameService.abandonmentThreshold,
+                  ))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Column(
+                        children: [
+                          Text(
+                            '相手が長時間応答していません',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          FilledButton(
+                            onPressed: () => _confirmClaimForfeit(uid),
+                            child: const Text('放置勝ちを申請する'),
+                          ),
+                        ],
                       ),
                     ),
                 ],
