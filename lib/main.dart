@@ -190,8 +190,14 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     return _handicap?.apply(standard) ?? standard;
   }
 
-  late ReversiaPosition _position = _freshInitialPosition;
-  late ReversiaPosition _initialPosition = _position;
+  // `late`な初期化子（`= _freshInitialPosition`等）にすると、最初に
+  // "読まれた"タイミングで遅延評価されるため、`_initialPosition`が
+  // `_openReview`/`_undo`まで一度も読まれなければ、その時点で既に何手も
+  // 進んだ`_position`の現在値を誤って捕捉してしまう（実際に発生していた
+  // バグ - `_undo`追加時に発見）。そのため値自体は`initState`で明示的に
+  // 代入し、どの手が着手される前に必ず正しい初期局面を捕捉する。
+  late ReversiaPosition _position;
+  late ReversiaPosition _initialPosition;
   final List<Object> _historyKeys = [];
   final List<RecordedMove> _moveRecord = [];
   Square? _selected;
@@ -206,6 +212,8 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
   @override
   void initState() {
     super.initState();
+    _initialPosition = _freshInitialPosition;
+    _position = _initialPosition;
     _historyKeys.add(_game.positionKey(_position));
     if (widget.resume) _loadSavedGame();
   }
@@ -303,6 +311,57 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
       );
     }
     _maybeScheduleAiMove();
+  }
+
+  /// 直前の自分の着手を取り消す。AIがすでに応手していれば、その応手と
+  /// 自分の着手の両方を取り消して再び自分の番に戻す（競合アプリの多くが
+  /// 標準機能として持つ「待った」 - strict alternation前提のこのゲーム
+  /// では、取り消す着手数は末尾がAI側かどうかで1手か2手かのいずれか）。
+  /// 対局終了後でも呼べる（最後の一手を取り消して対局を続行できる）。
+  void _undo() {
+    if (_moveRecord.isEmpty) return;
+    _aiMoveTimer?.cancel();
+
+    final toRemove = _moveRecord.last.side == Side.second ? 2 : 1;
+    final remaining =
+        (_moveRecord.length - toRemove).clamp(0, _moveRecord.length);
+    final newRecord = _moveRecord.sublist(0, remaining);
+
+    var position = _initialPosition;
+    final historyKeys = [_game.positionKey(position)];
+    Move? lastMove;
+    for (final m in newRecord) {
+      position = _game.apply(position, m.move, historyKeys: historyKeys);
+      historyKeys.add(_game.positionKey(position));
+      lastMove = m.move;
+    }
+
+    setState(() {
+      _position = position;
+      _historyKeys
+        ..clear()
+        ..addAll(historyKeys);
+      _moveRecord
+        ..clear()
+        ..addAll(newRecord);
+      _selected = null;
+      _hints = const [];
+      _lastMove = lastMove;
+      _aiThinking = false;
+    });
+
+    if (_handicap == null) {
+      // ハンディキャップ対局は保存しない方針（_applyMove参照）と同じ。
+      if (_moveRecord.isEmpty) {
+        widget.saveService.clearInProgressGame();
+      } else {
+        widget.saveService.saveInProgressGame(
+          _game.exportRecord(
+            GameRecord(gameId: 'local', moves: _moveRecord, result: _result),
+          ),
+        );
+      }
+    }
   }
 
   void _openReview() {
@@ -494,6 +553,11 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
                 (_result.isOngoing && !_aiThinking && _position.sideToMove == Side.first)
                     ? _showHint
                     : null,
+          ),
+          IconButton(
+            icon: const Icon(Icons.undo),
+            tooltip: '待った',
+            onPressed: _moveRecord.isEmpty ? null : _undo,
           ),
           IconButton(
             icon: const Icon(Icons.leaderboard),
