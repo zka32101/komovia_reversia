@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:komovia_core/komovia_core.dart';
 
 import '../models/reversia_puzzle_log.dart';
 import '../src/reversia_puzzle.dart';
@@ -50,24 +51,19 @@ class ReversiaPuzzleLogService {
     return ReversiaPuzzleLog.fromFirestore(uid, dateKey, doc);
   }
 
-  /// [uid]の現在の連続解答日数。今日より前の日を1日ずつさかのぼり、
-  /// 「その日のドキュメントが存在し、solved==true」が途切れた時点で
-  /// 止める。今日まだ解いていなくても、前日までの連続は失われない
-  /// （今日という日がまだ「連続が途切れた日」として確定していないため）。
-  Future<int> getStreak(String uid) async {
-    var streak = 0;
-    for (var i = 0; i < maxStreakLookbackDays; i++) {
-      final date = DateTime.now().subtract(Duration(days: i));
-      final dateKey = formatReversiaPuzzleDateKey(date);
-      final log = await getLog(uid, dateKey);
-      if (log == null || !log.solved) {
-        // 今日(i==0)だけは、まだ挑戦していないだけで連続自体は途切れて
-        // いない可能性があるため、streakを0にせず単に数えないで続行する。
-        if (i == 0) continue;
-        break;
-      }
-      streak++;
-    }
-    return streak;
+  /// [uid]の現在の連続解答日数。komovia_coreの`computeDailyStreak`
+  /// （komovia_goの`getTsumeGoStreak`と全く同じ日付ウォークアルゴリズム
+  /// を共通化したもの）を使う - `todayIsLenient`の既定値`true`により、
+  /// 今日まだ解いていなくても前日までの連続は失われない（今日という日
+  /// がまだ「連続が途切れた日」として確定していないため）。
+  Future<int> getStreak(String uid) {
+    return computeDailyStreak(
+      (daysAgo) async {
+        final date = DateTime.now().subtract(Duration(days: daysAgo));
+        final log = await getLog(uid, formatReversiaPuzzleDateKey(date));
+        return log != null && log.solved;
+      },
+      lookbackDays: maxStreakLookbackDays,
+    );
   }
 }
