@@ -20,6 +20,12 @@ final reversiaPvpGameStreamProvider =
   return ref.watch(reversiaPvpGameServiceProvider).watchGame(gameId);
 });
 
+/// [uid]が参加している進行中のPvP対局一覧（`ReversiaPvpGamesListScreen`用）。
+final reversiaUserActivePvpGamesProvider =
+    FutureProvider.family<List<ReversiaPvpGame>, String>((ref, uid) {
+  return ref.watch(reversiaPvpGameServiceProvider).getUserActiveGames(uid);
+});
+
 /// (gameId, uid, move)を渡して着手する。拒否された場合はfalseを返す。
 /// 着手によって対局が終局した場合、両対局者のレーティングを更新する
 /// （best-effort、対局進行自体はブロックしない）。

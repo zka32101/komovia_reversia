@@ -5,6 +5,7 @@ import '../../models/reversia_matching.dart';
 import '../../viewmodels/index.dart';
 import 'reversia_challenge_screen.dart';
 import 'reversia_pvp_game_screen.dart';
+import 'reversia_pvp_games_list_screen.dart';
 
 /// 実力マッチングEngine画面。komovia_shogiの`ShogiMatchingScreen`と同じ
 /// 役割だが、reversiaにはまだレーティング/リーダーボード機能が無いため
@@ -37,7 +38,20 @@ class _ReversiaMatchingScreenState extends ConsumerState<ReversiaMatchingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('対局相手を探す')),
+      appBar: AppBar(
+        title: const Text('対局相手を探す'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.list_alt),
+            tooltip: '対局中のPvP',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ReversiaPvpGamesListScreen(uid: widget.uid),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

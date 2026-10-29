@@ -343,4 +343,54 @@ void main() {
       expect(await service.getGame('no-such-game'), isNull);
     });
   });
+
+  group('ReversiaPvpGameService.getUserActiveGames', () {
+    test('includes games where the user is firstUid or secondUid', () async {
+      final firestore = FakeFirebaseFirestore();
+      final service = ReversiaPvpGameService(firestore);
+      final asFirst = await service.createGame(
+        firstUid: 'u1',
+        firstDisplayName: 'Alice',
+        secondUid: 'u2',
+        secondDisplayName: 'Bob',
+      );
+      final asSecond = await service.createGame(
+        firstUid: 'u3',
+        firstDisplayName: 'Carol',
+        secondUid: 'u1',
+        secondDisplayName: 'Alice',
+      );
+
+      final games = await service.getUserActiveGames('u1');
+
+      expect(games.map((g) => g.id), containsAll([asFirst.id, asSecond.id]));
+    });
+
+    test('excludes finished games', () async {
+      final firestore = FakeFirebaseFirestore();
+      final service = ReversiaPvpGameService(firestore);
+      final game = await service.createGame(
+        firstUid: 'u1',
+        firstDisplayName: 'Alice',
+        secondUid: 'u2',
+        secondDisplayName: 'Bob',
+      );
+      await service.resign(gameId: game.id, uid: 'u1');
+
+      expect(await service.getUserActiveGames('u1'), isEmpty);
+    });
+
+    test('excludes games the user is not a participant of', () async {
+      final firestore = FakeFirebaseFirestore();
+      final service = ReversiaPvpGameService(firestore);
+      await service.createGame(
+        firstUid: 'u1',
+        firstDisplayName: 'Alice',
+        secondUid: 'u2',
+        secondDisplayName: 'Bob',
+      );
+
+      expect(await service.getUserActiveGames('someone-else'), isEmpty);
+    });
+  });
 }

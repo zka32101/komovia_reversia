@@ -54,6 +54,25 @@ class ReversiaPvpGameService {
   Stream<ReversiaPvpGame> watchGame(String gameId) =>
       _games.doc(gameId).snapshots().map(ReversiaPvpGame.fromFirestore);
 
+  /// [uid]が参加している進行中(active)のPvP対局一覧。komovia_goの
+  /// `PvpGameService.getUserActiveGames`と同じ、2クエリの和集合
+  /// （`firstUid`/`secondUid`それぞれで`status == 'active'`を検索、
+  /// 等値条件のみなので複合インデックスは不要）。
+  Future<List<ReversiaPvpGame>> getUserActiveGames(String uid) async {
+    final asFirst = await _games
+        .where('firstUid', isEqualTo: uid)
+        .where('status', isEqualTo: 'active')
+        .get();
+    final asSecond = await _games
+        .where('secondUid', isEqualTo: uid)
+        .where('status', isEqualTo: 'active')
+        .get();
+    return [
+      ...asFirst.docs.map(ReversiaPvpGame.fromFirestore),
+      ...asSecond.docs.map(ReversiaPvpGame.fromFirestore),
+    ];
+  }
+
   /// [movesRecord]から現局面・局面履歴（千日手判定用）・着手リストを
   /// 初期局面から打ち直して再構成する。
   ({ReversiaPosition position, List<Object> historyKeys, List<RecordedMove> moves})
