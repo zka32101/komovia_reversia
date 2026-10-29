@@ -26,6 +26,7 @@ import 'package:komovia_reversia/views/screens/home_screen.dart';
 import 'package:komovia_reversia/views/screens/growth_screen.dart';
 import 'package:komovia_reversia/views/screens/leaderboard_screen.dart';
 import 'package:komovia_reversia/views/screens/live_friends_screen.dart';
+import 'package:komovia_reversia/views/screens/reversia_weekly_goals_screen.dart';
 import 'package:komovia_reversia/views/screens/message_threads_screen.dart';
 import 'package:komovia_reversia/views/screens/puzzle_screen.dart';
 import 'package:komovia_reversia/views/screens/reversia_matching_screen.dart';
@@ -120,11 +121,10 @@ void main() {
     expect(find.text('対局相手を探す'), findsOneWidget);
     expect(find.text('対局中のPvP'), findsOneWidget);
     expect(find.text('フレンド'), findsOneWidget);
-    expect(find.text('ライブ観戦フレンド'), findsOneWidget);
     expect(find.byIcon(Icons.notifications), findsOneWidget);
     expect(find.byIcon(Icons.mail_outline), findsOneWidget);
 
-    // トーナメント/実績はリストが伸びたため既定のcacheExtent外にあり、
+    // リストが伸びたため、以降のタイルは既定のcacheExtent外にあり、
     // スクロールしないとスライバーが要素を構築しない（findsOneWidgetは
     // ツリーに存在するかどうかしか見ないため、オフスクリーンでも通常は
     // 問題無いが、スライバーの遅延構築では未構築=未存在になる）。
@@ -134,6 +134,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pump();
+    expect(find.text('ライブ観戦フレンド'), findsOneWidget);
     expect(find.text('トーナメント'), findsOneWidget);
     expect(find.text('実績'), findsOneWidget);
   });
@@ -226,11 +227,33 @@ void main() {
   testWidgets('tapping フレンド opens FriendsScreen', (tester) async {
     await pumpHome(tester, uid: 'user1234');
 
+    await tester.scrollUntilVisible(
+      find.text('フレンド'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
     await tester.tap(find.text('フレンド'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(FriendsScreen), findsOneWidget);
+  });
+
+  testWidgets('tapping 今週の目標 opens ReversiaWeeklyGoalsScreen', (tester) async {
+    await pumpHome(tester, uid: 'user1234');
+
+    await tester.scrollUntilVisible(
+      find.text('今週の目標'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+    await tester.tap(find.text('今週の目標'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(ReversiaWeeklyGoalsScreen), findsOneWidget);
   });
 
   testWidgets('tapping ライブ観戦フレンド opens LiveFriendsScreen', (tester) async {

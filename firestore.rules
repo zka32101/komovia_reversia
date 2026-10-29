@@ -173,6 +173,14 @@ service cloud.firestore {
       allow read, write: if isOwner(uid);
     }
 
+    // ---------------- reversia_weekly_progress/{uid}_{weekId} ----------------
+    // ドキュメントIDが`{uid}_{weekId}`形式（ReversiaWeeklyProgressService
+    // 参照）なので、isOwner(uid)の代わりにID自体が自分のuidで始まるかを
+    // 見る。weekIdは常に`YYYY-MM-DD`形式で`_`を含まないため曖昧さは無い。
+    match /reversia_weekly_progress/{docId} {
+      allow read, write: if isSignedIn() && docId.split('_')[0] == request.auth.uid;
+    }
+
     // ---------------- message_threads/{threadId} ----------------
     // 1対1のフレンド間DM。threadIdは常に2者のuidをソートして連結した
     // ものなので（DirectMessageService.threadIdFor）、participantUidsは
