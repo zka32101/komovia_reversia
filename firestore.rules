@@ -50,5 +50,18 @@ service cloud.firestore {
         onlyChanged(['gameId']);
       allow delete: if false;
     }
+
+    // ---------------- reversia_pvp_games/{gameId} ----------------
+    match /reversia_pvp_games/{gameId} {
+      allow read: if isEither(resource.data.firstUid, resource.data.secondUid);
+      allow create: if isSignedIn() &&
+        (request.auth.uid == request.resource.data.firstUid ||
+         request.auth.uid == request.resource.data.secondUid);
+      // ReversiaPvpGameService.applyMove/resign: either participant may
+      // update movesRecord/isFirstTurn/movesCount/status/winnerUid/result.
+      allow update: if isEither(resource.data.firstUid, resource.data.secondUid) &&
+        onlyChanged(['movesRecord', 'isFirstTurn', 'movesCount', 'status', 'winnerUid', 'result', 'updatedAt']);
+      allow delete: if false;
+    }
   }
 }
