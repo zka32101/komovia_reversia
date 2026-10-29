@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:komovia_core/komovia_core.dart';
 
+import '../models/user_search_result.dart';
+
 /// フレンドCRUD - komovia_shogiの`friend_service.dart`と同じ役割・同じ
 /// Firestoreスキーマ（両ユーザーの`users/{uid}/friends`サブコレクション
 /// にそれぞれ自分視点のエントリーを持つ非正規化設計、`status`
@@ -158,5 +160,36 @@ class FriendService {
         .where('status', isEqualTo: 'blocked')
         .snapshots()
         .map((s) => s.docs.map(_fromDoc).toList());
+  }
+
+  /// 表示名の前方一致で他のユーザーを検索する - project-015の
+  /// `player_search_provider.dart`の移植漏れ分で、従来は生のUIDを
+  /// 入力させるしかなかったフレンド申請フローを補う。Firestoreは全文
+  /// 検索をサポートしないため、`displayName`の単一フィールドレンジ
+  /// クエリ（``は非常に大きいUnicodeコードポイントで、事実上の
+  /// 「前方一致」を実現する常用テクニック）による前方一致検索のみ。
+  /// 大文字小文字は区別する。自分自身は結果から除外する。
+  Future<List<UserSearchResult>> searchByDisplayName(
+    String query,
+    String excludeUid, {
+    int limit = 20,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+
+    final snapshot = await _firestore
+        .collection('users')
+        .where('displayName', isGreaterThanOrEqualTo: trimmed)
+        .where('displayName', isLessThan: '$trimmed')
+        .limit(limit)
+        .get();
+
+    return snapshot.docs
+        .where((doc) => doc.id != excludeUid)
+        .map((doc) => UserSearchResult(
+              uid: doc.id,
+              displayName: (doc.data()['displayName'] as String?) ?? 'Player',
+            ))
+        .toList();
   }
 }

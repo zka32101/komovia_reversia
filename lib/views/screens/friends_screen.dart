@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/user_search_result.dart';
 import '../../viewmodels/index.dart';
 import 'chat_screen.dart';
 
@@ -150,30 +151,91 @@ class FriendsScreen extends ConsumerWidget {
 
   void _showAddFriendDialog(BuildContext context, WidgetRef ref) {
     final controller = TextEditingController();
+    var results = <UserSearchResult>[];
+    var searching = false;
+    var sentToUid = <String>{};
+
     showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('フレンドを追加'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: '相手のUID'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              final toUid = controller.text.trim();
-              if (toUid.isNotEmpty && toUid != uid) {
-                ref.read(sendFriendRequestProvider)(uid, displayName, toUid);
-              }
-              Navigator.pop(ctx);
-            },
-            child: const Text('送信'),
-          ),
-        ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) {
+          Future<void> runSearch(String query) async {
+            setState(() => searching = true);
+            final found = await ref.read(searchUsersByDisplayNameProvider)(query, uid);
+            setState(() {
+              results = found;
+              searching = false;
+            });
+          }
+
+          return AlertDialog(
+            title: const Text('フレンドを追加'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(
+                      labelText: '表示名で検索',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onSubmitted: runSearch,
+                  ),
+                  const SizedBox(height: 8),
+                  if (searching)
+                    const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (results.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Text('検索ボックスに表示名を入れて検索してください'),
+                    )
+                  else
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 240),
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: results.map((r) {
+                          final alreadySent = sentToUid.contains(r.uid);
+                          return ListTile(
+                            title: Text(r.displayName),
+                            trailing: alreadySent
+                                ? const Icon(Icons.check, color: Colors.green)
+                                : TextButton(
+                                    onPressed: () async {
+                                      await ref.read(sendFriendRequestProvider)(
+                                        uid,
+                                        displayName,
+                                        r.uid,
+                                      );
+                                      setState(() => sentToUid = {...sentToUid, r.uid});
+                                    },
+                                    child: const Text('申請'),
+                                  ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => runSearch(controller.text),
+                child: const Text('検索'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('閉じる'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
