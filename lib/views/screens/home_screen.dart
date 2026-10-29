@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../viewmodels/index.dart';
+import 'achievements_screen.dart';
 import 'friends_screen.dart';
 import 'leaderboard_screen.dart';
 import 'message_threads_screen.dart';
@@ -174,6 +175,17 @@ class HomeScreen extends ConsumerWidget {
                     uid: uid,
                     displayName: 'Player ${uid.substring(0, 6)}',
                   ),
+                ),
+              ),
+            ),
+            _HomeTile(
+              icon: Icons.military_tech,
+              title: '実績',
+              subtitle: 'バッジ・実績の進捗を見る',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AchievementsScreen(uid: uid),
                 ),
               ),
             ),

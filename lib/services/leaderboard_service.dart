@@ -45,6 +45,7 @@ class LeaderboardService {
     int gamesDelta = 0,
     int winsDelta = 0,
     int puzzlesDelta = 0,
+    int achievementsDelta = 0,
   }) async {
     final ref = _collection(period, type).doc(uid);
     await _firestore.runTransaction((tx) async {
@@ -71,6 +72,7 @@ class LeaderboardService {
         wins: newWins,
         winRate: newGames == 0 ? 0 : newWins / newGames,
         puzzlesSolved: current.puzzlesSolved + puzzlesDelta,
+        achievementsUnlocked: current.achievementsUnlocked + achievementsDelta,
         lastUpdated: DateTime.now(),
       );
       tx.set(ref, updated.toJson());

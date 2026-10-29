@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
+import 'package:komovia_reversia/services/leaderboard_service.dart';
 import 'package:komovia_reversia/services/reversia_puzzle_log_service.dart';
 import 'package:komovia_reversia/viewmodels/auth_provider.dart';
+import 'package:komovia_reversia/viewmodels/leaderboard_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_puzzle_log_provider.dart';
 import 'package:komovia_reversia/views/screens/puzzle_screen.dart';
 
@@ -137,11 +139,13 @@ void main() {
       (tester) async {
     final firestore = FakeFirebaseFirestore();
     final puzzleLogService = ReversiaPuzzleLogService(firestore);
+    final leaderboardService = LeaderboardService(firestore: firestore);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          currentUidProvider.overrideWithValue('u1'),
+          currentUidProvider.overrideWithValue('user1234'),
           reversiaPuzzleLogServiceProvider.overrideWithValue(puzzleLogService),
+          leaderboardServiceProvider.overrideWithValue(leaderboardService),
         ],
         child: const MaterialApp(home: PuzzleScreen()),
       ),
@@ -154,9 +158,42 @@ void main() {
     await tester.pumpAndSettle();
 
     final dateKey = formatReversiaPuzzleDateKey(DateTime.now());
-    final log = await puzzleLogService.getLog('u1', dateKey);
+    final log = await puzzleLogService.getLog('user1234', dateKey);
     expect(log, isNotNull);
     expect(log!.solved, isTrue);
     expect(find.text('1日連続'), findsOneWidget);
+
+    final entry = await leaderboardService.getEntry('user1234');
+    expect(entry!.puzzlesSolved, 1);
+  });
+
+  testWidgets(
+      'resolving an already-solved puzzle again does not double-count puzzlesSolved',
+      (tester) async {
+    final firestore = FakeFirebaseFirestore();
+    final puzzleLogService = ReversiaPuzzleLogService(firestore);
+    final leaderboardService = LeaderboardService(firestore: firestore);
+    final dateKey = formatReversiaPuzzleDateKey(DateTime.now());
+    await puzzleLogService.recordAttempt(uid: 'user1234', dateKey: dateKey, correct: true);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentUidProvider.overrideWithValue('user1234'),
+          reversiaPuzzleLogServiceProvider.overrideWithValue(puzzleLogService),
+          leaderboardServiceProvider.overrideWithValue(leaderboardService),
+        ],
+        child: const MaterialApp(home: PuzzleScreen()),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tapAt(squareCenter(tester, solutionMove.from));
+    await tester.pump();
+    await tester.tapAt(squareCenter(tester, solutionMove.to));
+    await tester.pumpAndSettle();
+
+    final entry = await leaderboardService.getEntry('user1234');
+    expect(entry?.puzzlesSolved ?? 0, 0);
   });
 }

@@ -15,6 +15,7 @@ import 'package:komovia_reversia/viewmodels/leaderboard_provider.dart';
 import 'package:komovia_reversia/viewmodels/notification_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_pvp_game_provider.dart';
 import 'package:komovia_reversia/viewmodels/tournament_provider.dart';
+import 'package:komovia_reversia/views/screens/achievements_screen.dart';
 import 'package:komovia_reversia/views/screens/friends_screen.dart';
 import 'package:komovia_reversia/views/screens/home_screen.dart';
 import 'package:komovia_reversia/views/screens/leaderboard_screen.dart';
@@ -79,11 +80,12 @@ void main() {
     expect(find.text('対局中のPvP'), findsNothing);
     expect(find.text('フレンド'), findsNothing);
     expect(find.text('トーナメント'), findsNothing);
+    expect(find.text('実績'), findsNothing);
     expect(find.byIcon(Icons.notifications), findsNothing);
     expect(find.byIcon(Icons.mail_outline), findsNothing);
   });
 
-  testWidgets('shows the matching/PvP-list/friends/tournament tiles and notification/message icons when signed in', (
+  testWidgets('shows the matching/PvP-list/friends/tournament/achievement tiles and notification/message icons when signed in', (
     tester,
   ) async {
     await pumpHome(tester, uid: 'user1234');
@@ -92,6 +94,7 @@ void main() {
     expect(find.text('対局中のPvP'), findsOneWidget);
     expect(find.text('フレンド'), findsOneWidget);
     expect(find.text('トーナメント'), findsOneWidget);
+    expect(find.text('実績'), findsOneWidget);
     expect(find.byIcon(Icons.notifications), findsOneWidget);
     expect(find.byIcon(Icons.mail_outline), findsOneWidget);
   });
@@ -144,6 +147,22 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(FriendsScreen), findsOneWidget);
+  });
+
+  testWidgets('tapping 実績 opens AchievementsScreen', (tester) async {
+    await pumpHome(tester, uid: 'user1234');
+
+    await tester.scrollUntilVisible(
+      find.text('実績'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+    await tester.tap(find.text('実績'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(AchievementsScreen), findsOneWidget);
   });
 
   testWidgets('tapping トーナメント opens TournamentScreen', (tester) async {
