@@ -11,6 +11,7 @@ import 'firebase_options.dart';
 import 'services/onboarding_service.dart';
 import 'viewmodels/index.dart';
 import 'views/screens/leaderboard_screen.dart';
+import 'views/screens/notification_screen.dart';
 import 'views/screens/onboarding_screen.dart';
 import 'views/screens/puzzle_screen.dart';
 import 'views/screens/reversia_game_review_screen.dart';
@@ -280,6 +281,45 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
       appBar: AppBar(
         title: const Text('Komovia Reversia'),
         actions: [
+          Consumer(
+            builder: (context, ref, _) {
+              final uid = ref.watch(currentUidProvider);
+              if (uid == null) return const SizedBox.shrink();
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications),
+                    tooltip: '通知',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => NotificationScreen(uid: uid),
+                      ),
+                    ),
+                  ),
+                  Builder(
+                    builder: (context) {
+                      final count = ref.watch(unreadNotificationCountProvider(uid));
+                      if (count == 0) return const SizedBox.shrink();
+                      return Positioned(
+                        right: 6,
+                        top: 6,
+                        child: CircleAvatar(
+                          radius: 8,
+                          backgroundColor: Colors.red,
+                          child: Text(
+                            '$count',
+                            style: const TextStyle(fontSize: 10, color: Colors.white),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
           Consumer(
             builder: (context, ref, _) {
               final uid = ref.watch(currentUidProvider);
