@@ -7,12 +7,14 @@ import 'package:komovia_reversia/services/friend_service.dart';
 import 'package:komovia_reversia/services/leaderboard_service.dart';
 import 'package:komovia_reversia/services/notification_service.dart';
 import 'package:komovia_reversia/services/reversia_pvp_game_service.dart';
+import 'package:komovia_reversia/services/tournament_service.dart';
 import 'package:komovia_reversia/viewmodels/auth_provider.dart';
 import 'package:komovia_reversia/viewmodels/direct_message_provider.dart';
 import 'package:komovia_reversia/viewmodels/friend_provider.dart';
 import 'package:komovia_reversia/viewmodels/leaderboard_provider.dart';
 import 'package:komovia_reversia/viewmodels/notification_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_pvp_game_provider.dart';
+import 'package:komovia_reversia/viewmodels/tournament_provider.dart';
 import 'package:komovia_reversia/views/screens/friends_screen.dart';
 import 'package:komovia_reversia/views/screens/home_screen.dart';
 import 'package:komovia_reversia/views/screens/leaderboard_screen.dart';
@@ -21,6 +23,7 @@ import 'package:komovia_reversia/views/screens/puzzle_screen.dart';
 import 'package:komovia_reversia/views/screens/reversia_matching_screen.dart';
 import 'package:komovia_reversia/views/screens/reversia_pvp_games_list_screen.dart';
 import 'package:komovia_reversia/views/screens/settings_screen.dart';
+import 'package:komovia_reversia/views/screens/tournament_screen.dart';
 
 void main() {
   // real Firebase providers (notifications/leaderboard/PvP list) all take
@@ -47,6 +50,8 @@ void main() {
               .overrideWithValue(FriendService(firestore: firestore)),
           directMessageServiceProvider
               .overrideWithValue(DirectMessageService(firestore: firestore)),
+          tournamentServiceProvider
+              .overrideWithValue(TournamentService(firestore: firestore)),
         ],
         child: MaterialApp(
           home: HomeScreen(onPlayReversia: onPlayReversia ?? () {}),
@@ -73,11 +78,12 @@ void main() {
     expect(find.text('対局相手を探す'), findsNothing);
     expect(find.text('対局中のPvP'), findsNothing);
     expect(find.text('フレンド'), findsNothing);
+    expect(find.text('トーナメント'), findsNothing);
     expect(find.byIcon(Icons.notifications), findsNothing);
     expect(find.byIcon(Icons.mail_outline), findsNothing);
   });
 
-  testWidgets('shows the matching/PvP-list/friends tiles and notification/message icons when signed in', (
+  testWidgets('shows the matching/PvP-list/friends/tournament tiles and notification/message icons when signed in', (
     tester,
   ) async {
     await pumpHome(tester, uid: 'user1234');
@@ -85,6 +91,7 @@ void main() {
     expect(find.text('対局相手を探す'), findsOneWidget);
     expect(find.text('対局中のPvP'), findsOneWidget);
     expect(find.text('フレンド'), findsOneWidget);
+    expect(find.text('トーナメント'), findsOneWidget);
     expect(find.byIcon(Icons.notifications), findsOneWidget);
     expect(find.byIcon(Icons.mail_outline), findsOneWidget);
   });
@@ -137,6 +144,16 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(FriendsScreen), findsOneWidget);
+  });
+
+  testWidgets('tapping トーナメント opens TournamentScreen', (tester) async {
+    await pumpHome(tester, uid: 'user1234');
+
+    await tester.tap(find.text('トーナメント'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(TournamentScreen), findsOneWidget);
   });
 
   testWidgets('tapping the mail icon opens MessageThreadsScreen', (tester) async {
