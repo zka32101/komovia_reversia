@@ -54,6 +54,12 @@ final startTournamentProvider = Provider(
       .startTournament(tournamentId, displayNames),
 );
 
+final tournamentStandingsProvider =
+    FutureProvider.family<List<TournamentStandingEntry>, String>(
+  (ref, tournamentId) =>
+      ref.watch(tournamentServiceProvider).getStandings(tournamentId),
+);
+
 final recordMatchResultProvider = Provider(
   (ref) => (
     String tournamentId,

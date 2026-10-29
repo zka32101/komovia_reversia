@@ -46,7 +46,17 @@ class TournamentBracketScreen extends ConsumerWidget {
     displayNames[uid] = displayName;
 
     return Scaffold(
-      appBar: AppBar(title: Text(tournament?.name ?? 'トーナメント')),
+      appBar: AppBar(
+        title: Text(tournament?.name ?? 'トーナメント'),
+        actions: [
+          if (tournament != null && tournament.format != 'single_elimination')
+            IconButton(
+              icon: const Icon(Icons.leaderboard_outlined),
+              tooltip: '順位表',
+              onPressed: () => _showStandings(context, ref),
+            ),
+        ],
+      ),
       floatingActionButton: tournament != null && tournament.isUpcoming
           ? FloatingActionButton.extended(
               onPressed: () =>
@@ -91,6 +101,41 @@ class TournamentBracketScreen extends ConsumerWidget {
                 );
               }).toList(),
             ),
+    );
+  }
+
+  Future<void> _showStandings(BuildContext context, WidgetRef ref) async {
+    final standings =
+        await ref.read(tournamentStandingsProvider(tournamentId).future);
+    if (!context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('順位表'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: standings.isEmpty
+              ? const Text('まだ試合結果がありません')
+              : ListView(
+                  shrinkWrap: true,
+                  children: standings.asMap().entries.map((e) {
+                    final rank = e.key + 1;
+                    final entry = e.value;
+                    return ListTile(
+                      leading: Text('$rank位'),
+                      title: Text(entry.displayName),
+                      trailing: Text('${entry.wins}勝${entry.losses}敗'),
+                    );
+                  }).toList(),
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('閉じる'),
+          ),
+        ],
+      ),
     );
   }
 }
