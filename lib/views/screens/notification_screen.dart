@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../viewmodels/index.dart';
 import 'reversia_pvp_game_screen.dart';
 
@@ -13,20 +14,21 @@ class NotificationScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final notifications = ref.watch(notificationsStreamProvider(uid)).value ?? [];
     return Scaffold(
       appBar: AppBar(
-        title: const Text('通知'),
+        title: Text(l10n.notificationsTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            tooltip: '通知設定',
+            tooltip: l10n.notificationSettingsTooltip,
             onPressed: () => _showPreferenceDialog(context, ref),
           ),
         ],
       ),
       body: notifications.isEmpty
-          ? const Center(child: Text('通知はありません'))
+          ? Center(child: Text(l10n.notificationsEmptyMessage))
           : ListView(
               children: notifications
                   .map(
@@ -112,35 +114,37 @@ class _NotificationPreferenceDialogState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('通知設定'),
+      title: Text(l10n.notificationSettingsTooltip),
       content: SizedBox(
         width: double.maxFinite,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildSwitch(
-              'すべての通知',
+              l10n.notificationAllLabel,
               _allNotifications,
               (v) => setState(() => _allNotifications = v),
+              isAllToggle: true,
             ),
             _buildSwitch(
-              'フレンド申請',
+              l10n.notificationFriendRequestsLabel,
               _friendRequests,
               (v) => setState(() => _friendRequests = v),
             ),
             _buildSwitch(
-              '対局の招待',
+              l10n.notificationGameInvitationsLabel,
               _gameInvitations,
               (v) => setState(() => _gameInvitations = v),
             ),
             _buildSwitch(
-              'トーナメント',
+              l10n.notificationTournamentLabel,
               _tournamentUpdates,
               (v) => setState(() => _tournamentUpdates = v),
             ),
             _buildSwitch(
-              '実績解除',
+              l10n.notificationAchievementsLabel,
               _achievements,
               (v) => setState(() => _achievements = v),
             ),
@@ -150,7 +154,7 @@ class _NotificationPreferenceDialogState
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('キャンセル'),
+          child: Text(l10n.cancelButton),
         ),
         TextButton(
           onPressed: () async {
@@ -163,19 +167,24 @@ class _NotificationPreferenceDialogState
             ));
             if (context.mounted) Navigator.pop(context);
           },
-          child: const Text('保存'),
+          child: Text(l10n.saveButton),
         ),
       ],
     );
   }
 
-  Widget _buildSwitch(String label, bool value, ValueChanged<bool> onChanged) {
+  Widget _buildSwitch(
+    String label,
+    bool value,
+    ValueChanged<bool> onChanged, {
+    bool isAllToggle = false,
+  }) {
     return SwitchListTile(
       title: Text(label),
       value: value,
       // 「すべての通知」がオフのときは個別トグルの意味がないため無効化する
       // （実際のフィルタリングはNotificationPreference.allowsが行う）。
-      onChanged: (label == 'すべての通知' || _allNotifications) ? onChanged : null,
+      onChanged: (isAllToggle || _allNotifications) ? onChanged : null,
     );
   }
 }

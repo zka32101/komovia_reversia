@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../viewmodels/index.dart';
 import 'achievements_screen.dart';
 import 'friends_screen.dart';
@@ -30,6 +31,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final uid = ref.watch(currentUidProvider);
 
     return Scaffold(
@@ -37,7 +39,7 @@ class HomeScreen extends ConsumerWidget {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Komovia Reversia'),
+            Text(l10n.appTitle),
             if (uid != null && ref.watch(isPremiumProvider)) ...[
               const SizedBox(width: 6),
               const Icon(Icons.workspace_premium, color: Colors.amber, size: 20),
@@ -51,7 +53,7 @@ class HomeScreen extends ConsumerWidget {
               children: [
                 IconButton(
                   icon: const Icon(Icons.notifications),
-                  tooltip: '通知',
+                  tooltip: l10n.notificationsTooltip,
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -88,7 +90,7 @@ class HomeScreen extends ConsumerWidget {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.mail_outline),
-                      tooltip: 'メッセージ',
+                      tooltip: l10n.messagesTitle,
                       onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -124,20 +126,20 @@ class HomeScreen extends ConsumerWidget {
           if (ref.watch(hasInProgressGameProvider).value ?? false)
             _HomeTile(
               icon: Icons.history,
-              title: '続きから',
-              subtitle: '進行中の対局を再開する',
+              title: l10n.homeResumeTitle,
+              subtitle: l10n.homeResumeSubtitle,
               onTap: () => onPlayReversia(resume: true),
             ),
           _HomeTile(
             icon: Icons.play_circle_fill,
-            title: 'プレイ',
-            subtitle: 'AIと対局する',
+            title: l10n.homePlayTitle,
+            subtitle: l10n.homePlaySubtitle,
             onTap: () => onPlayReversia(),
           ),
           _HomeTile(
             icon: Icons.calendar_today,
-            title: '今日の1局',
-            subtitle: '毎日更新されるパズルに挑戦',
+            title: l10n.dailyPuzzleTooltip,
+            subtitle: l10n.homeDailyPuzzleSubtitle,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const PuzzleScreen()),
@@ -146,8 +148,8 @@ class HomeScreen extends ConsumerWidget {
           if (uid != null) ...[
             _HomeTile(
               icon: Icons.group,
-              title: '対局相手を探す',
-              subtitle: 'マッチングまたは招待コードで対局する',
+              title: l10n.homeFindOpponentTitle,
+              subtitle: l10n.homeFindOpponentSubtitle,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -160,8 +162,8 @@ class HomeScreen extends ConsumerWidget {
             ),
             _HomeTile(
               icon: Icons.list_alt,
-              title: '対局中のPvP',
-              subtitle: '進行中の対局一覧',
+              title: l10n.homePvpGamesTitle,
+              subtitle: l10n.homePvpGamesSubtitle,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -171,8 +173,8 @@ class HomeScreen extends ConsumerWidget {
             ),
             _HomeTile(
               icon: Icons.trending_up,
-              title: '成長の記録',
-              subtitle: 'レーティング・対局数・勝率を振り返る',
+              title: l10n.growthTitle,
+              subtitle: l10n.homeGrowthSubtitle,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const GrowthScreen()),
@@ -180,8 +182,8 @@ class HomeScreen extends ConsumerWidget {
             ),
             _HomeTile(
               icon: Icons.flag_outlined,
-              title: '今週の目標',
-              subtitle: '対局数・勝利数・パズルの週替わり目標',
+              title: l10n.homeWeeklyGoalsTitle,
+              subtitle: l10n.homeWeeklyGoalsSubtitle,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ReversiaWeeklyGoalsScreen()),
@@ -189,8 +191,8 @@ class HomeScreen extends ConsumerWidget {
             ),
             _HomeTile(
               icon: Icons.people,
-              title: 'フレンド',
-              subtitle: 'フレンド申請・管理',
+              title: l10n.homeFriendsTitle,
+              subtitle: l10n.homeFriendsSubtitle,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -203,8 +205,8 @@ class HomeScreen extends ConsumerWidget {
             ),
             _HomeTile(
               icon: Icons.live_tv,
-              title: 'ライブ観戦フレンド',
-              subtitle: 'いま対局中のフレンドを観戦する',
+              title: l10n.liveFriendsTitle,
+              subtitle: l10n.homeLiveFriendsSubtitle,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -214,8 +216,8 @@ class HomeScreen extends ConsumerWidget {
             ),
             _HomeTile(
               icon: Icons.emoji_events,
-              title: 'トーナメント',
-              subtitle: '参加・ブラケットを見る',
+              title: l10n.homeTournamentTitle,
+              subtitle: l10n.homeTournamentSubtitle,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -228,8 +230,8 @@ class HomeScreen extends ConsumerWidget {
             ),
             _HomeTile(
               icon: Icons.military_tech,
-              title: '実績',
-              subtitle: 'バッジ・実績の進捗を見る',
+              title: l10n.achievementsTitle,
+              subtitle: l10n.homeAchievementsSubtitle,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -240,8 +242,8 @@ class HomeScreen extends ConsumerWidget {
           ],
           _HomeTile(
             icon: Icons.leaderboard,
-            title: 'ランキング',
-            subtitle: 'レーティング上位プレイヤー',
+            title: l10n.leaderboardTitle,
+            subtitle: l10n.homeLeaderboardSubtitle,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
@@ -249,8 +251,8 @@ class HomeScreen extends ConsumerWidget {
           ),
           _HomeTile(
             icon: Icons.settings,
-            title: '設定',
-            subtitle: '利用規約・プライバシーポリシーなど',
+            title: l10n.homeSettingsTitle,
+            subtitle: l10n.homeSettingsSubtitle,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => SettingsScreen(uid: uid)),

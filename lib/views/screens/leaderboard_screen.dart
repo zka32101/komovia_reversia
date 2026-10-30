@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../viewmodels/index.dart';
 
 /// ランキング画面。komovia_shogiの`LeaderboardScreen`と同じ役割
@@ -10,11 +11,12 @@ class LeaderboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final entries = ref.watch(topLeaderboardEntriesProvider).value ?? [];
     return Scaffold(
-      appBar: AppBar(title: const Text('ランキング')),
+      appBar: AppBar(title: Text(l10n.leaderboardTitle)),
       body: entries.isEmpty
-          ? const Center(child: Text('まだランキングに登録された対局者がいません'))
+          ? Center(child: Text(l10n.leaderboardEmptyMessage))
           : ListView.builder(
               itemCount: entries.length,
               itemBuilder: (context, i) {
@@ -24,7 +26,11 @@ class LeaderboardScreen extends ConsumerWidget {
                   title: Text(e.displayName),
                   trailing: Text('${e.rating}'),
                   subtitle: Text(
-                    '${e.wins}/${e.gamesPlayed} 勝 (${(e.winRate * 100).toStringAsFixed(0)}%)',
+                    l10n.leaderboardWinsSubtitle(
+                      e.wins,
+                      e.gamesPlayed,
+                      (e.winRate * 100).toStringAsFixed(0),
+                    ),
                   ),
                 );
               },

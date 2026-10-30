@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../viewmodels/index.dart';
 import 'reversia_pvp_game_screen.dart';
 
@@ -34,6 +35,7 @@ class _TournamentBracketScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final matches = ref
             .watch(tournamentMatchesStreamProvider(widget.tournamentId))
             .value ??
@@ -62,12 +64,12 @@ class _TournamentBracketScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(tournament?.name ?? 'トーナメント'),
+        title: Text(tournament?.name ?? l10n.homeTournamentTitle),
         actions: [
           if (tournament != null && tournament.format != 'single_elimination')
             IconButton(
               icon: const Icon(Icons.leaderboard_outlined),
-              tooltip: '順位表',
+              tooltip: l10n.tournamentStandingsTooltip,
               onPressed: () => _showStandings(context),
             ),
         ],
@@ -78,19 +80,19 @@ class _TournamentBracketScreenState
                 widget.tournamentId,
                 displayNames,
               ),
-              label: const Text('開始する'),
+              label: Text(l10n.tournamentStartButton),
               icon: const Icon(Icons.play_arrow),
             )
           : null,
       body: byRound.isEmpty
-          ? const Center(child: Text('まだブラケットは生成されていません'))
+          ? Center(child: Text(l10n.tournamentBracketEmptyMessage))
           : ListView(
               children: byRound.entries.map((entry) {
                 return ExpansionTile(
-                  title: Text('${entry.key}回戦'),
+                  title: Text(l10n.tournamentRoundLabel(entry.key)),
                   initiallyExpanded: true,
                   children: entry.value
-                      .map<Widget>((m) => _buildMatchTile(m, displayNames))
+                      .map<Widget>((m) => _buildMatchTile(m, displayNames, l10n))
                       .toList(),
                 );
               }).toList(),
@@ -98,7 +100,11 @@ class _TournamentBracketScreenState
     );
   }
 
-  Widget _buildMatchTile(TournamentMatch m, Map<String, String> displayNames) {
+  Widget _buildMatchTile(
+    TournamentMatch m,
+    Map<String, String> displayNames,
+    AppLocalizations l10n,
+  ) {
     final isMyMatch = m.player1Uid == widget.uid || m.player2Uid == widget.uid;
     final canStart = isMyMatch &&
         m.isPending &&
@@ -107,23 +113,24 @@ class _TournamentBracketScreenState
 
     return ListTile(
       title: Text(
-        '${m.player1DisplayName ?? "不戦勝"} vs ${m.player2DisplayName ?? "不戦勝"}',
+        '${m.player1DisplayName ?? l10n.tournamentByeLabel} vs '
+        '${m.player2DisplayName ?? l10n.tournamentByeLabel}',
       ),
       subtitle: Text(
         m.isCompleted
-            ? '勝者: ${displayNames[m.winnerUid] ?? m.winnerUid}'
+            ? l10n.tournamentWinnerLabel(displayNames[m.winnerUid] ?? m.winnerUid ?? '')
             : m.status,
       ),
       trailing: m.gameId != null
           ? TextButton(
               onPressed: () => _openGame(m.gameId!),
-              child: const Text('対局を見る'),
+              child: Text(l10n.tournamentViewGameButton),
             )
           : canStart
               ? TextButton(
                   onPressed:
                       _isCreatingGame ? null : () => _startMatch(m, displayNames),
-                  child: const Text('対局を開始する'),
+                  child: Text(l10n.tournamentStartMatchButton),
                 )
               : null,
     );
@@ -169,26 +176,29 @@ class _TournamentBracketScreenState
   }
 
   Future<void> _showStandings(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final standings = await ref
         .read(tournamentStandingsProvider(widget.tournamentId).future);
     if (!context.mounted) return;
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('順位表'),
+        title: Text(l10n.tournamentStandingsTooltip),
         content: SizedBox(
           width: double.maxFinite,
           child: standings.isEmpty
-              ? const Text('まだ試合結果がありません')
+              ? Text(l10n.tournamentStandingsEmptyMessage)
               : ListView(
                   shrinkWrap: true,
                   children: standings.asMap().entries.map((e) {
                     final rank = e.key + 1;
                     final entry = e.value;
                     return ListTile(
-                      leading: Text('$rank位'),
+                      leading: Text(l10n.tournamentRankLabel(rank)),
                       title: Text(entry.displayName),
-                      trailing: Text('${entry.wins}勝${entry.losses}敗'),
+                      trailing: Text(
+                        l10n.tournamentWinLossLabel(entry.wins, entry.losses),
+                      ),
                     );
                   }).toList(),
                 ),
@@ -196,7 +206,7 @@ class _TournamentBracketScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('閉じる'),
+            child: Text(l10n.closeButton),
           ),
         ],
       ),

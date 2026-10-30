@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../services/direct_message_service.dart';
 import '../../viewmodels/index.dart';
 
@@ -61,7 +62,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('メッセージの送信に失敗しました')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.chatSendFailedMessage)),
         );
       }
     }
@@ -69,6 +70,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final messagesAsync = ref.watch(threadMessagesProvider(_threadId));
     // 相手がこの画面を開いている間に新たにメッセージを送ってきた場合も
     // 未読数が増え続けないよう、新規メッセージを受け取るたびに既読に
@@ -91,7 +93,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               child: messagesAsync.when(
                 data: (messages) {
                   if (messages.isEmpty) {
-                    return const Center(child: Text('まだメッセージはありません'));
+                    return Center(child: Text(l10n.chatEmptyMessage));
                   }
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (_scrollController.hasClients) {
@@ -111,7 +113,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (err, stack) => Text(
-                  'エラー: $err',
+                  l10n.commonErrorMessage(err.toString()),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
@@ -124,6 +126,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildInputRow() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -134,8 +137,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Expanded(
             child: TextField(
               controller: _textController,
-              decoration: const InputDecoration(
-                hintText: 'メッセージ',
+              decoration: InputDecoration(
+                hintText: l10n.chatMessageHint,
                 border: InputBorder.none,
               ),
               textInputAction: TextInputAction.send,
@@ -146,7 +149,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.send),
-            tooltip: '送信',
+            tooltip: l10n.chatSendTooltip,
             onPressed: _send,
           ),
         ],

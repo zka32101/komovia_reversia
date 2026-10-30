@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
+
 /// 利用規約・プライバシーポリシー画面 - GoEnの`LegalDocumentScreen`と同じ
-/// 役割だが、reversiaにはl10n基盤が無いため文言を直接ハードコードして
-/// いる。本文はこのアプリが実際に使っている機能のみに絞っている -
+/// 役割。本文はこのアプリが実際に使っている機能のみに絞っている -
 /// Firebase Authentication（匿名サインインのみ）、Cloud Firestore、
 /// Firebase Crashlytics。GoEnにあるAnalytics/決済（IAP）に関する記述は
 /// reversiaには該当する機能が無いため含めていない。
@@ -19,85 +20,21 @@ class LegalDocumentScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isPrivacy = kind == LegalDocumentKind.privacyPolicy;
+    final title = isPrivacy ? l10n.privacyPolicyTitle : l10n.termsOfServiceTitle;
+    final body = isPrivacy
+        ? l10n.privacyPolicyBodyText(_lastUpdated)
+        : l10n.termsOfServiceBodyText(_lastUpdated);
     return Scaffold(
-      appBar: AppBar(title: Text(isPrivacy ? 'プライバシーポリシー' : '利用規約')),
+      appBar: AppBar(title: Text(title)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Text(
-          isPrivacy ? _privacyPolicyText : _termsOfServiceText,
+          body,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       ),
     );
   }
 }
-
-const _privacyPolicyText = '''
-プライバシーポリシー
-最終更新日: $_lastUpdated
-
-Komovia Reversia（以下「本アプリ」）は、以下の方針に基づき利用者情報を取り扱います。
-
-1. 取得する情報
-本アプリはFirebase Authenticationの匿名サインイン機能を利用し、端末ごとに一意の識別子（UID）を発行します。氏名・メールアドレス・電話番号など、利用者を直接特定できる情報の入力は求めません。
-
-2. 情報の利用目的
-取得したUIDは、対局履歴・パズルの進捗・レーティング・通知の送受信・フレンド機能など、本アプリ内のデータをその利用者に紐付けて保存・表示するためにのみ使用します。
-
-3. データの保存先
-対局データ・パズル進捗・通知・ランキング情報はGoogle Cloud Firestoreに保存されます。これらのデータはFirestoreのセキュリティルールにより、原則として本人のみが読み書きできるよう制限されています（対局相手の表示名のように、対局を成立させるために必要な範囲で他の利用者にも参照される情報を除きます）。
-
-4. クラッシュレポート
-本アプリはFirebase Crashlyticsを利用して、アプリの異常終了（クラッシュ）に関する技術的な情報（発生場所・端末のOSバージョンなど）を収集します。これは本アプリの品質改善のみを目的としており、個人を特定する情報は含みません。
-
-5. 第三者への提供
-本アプリは、上記Firebaseの各サービス（Google社が提供）以外の第三者に利用者情報を提供することはありません。
-
-6. データの保持期間
-匿名アカウントおよびそれに紐づくデータは、利用者がアプリをアンインストールしても自動的に削除されるわけではありません。削除をご希望の場合は、下記の連絡先までお問い合わせください。
-
-7. お子様のプライバシー
-本アプリは特定の年齢層を対象としたものではなく、個人を特定する情報を収集しないため、お子様が利用される場合も上記の取り扱いに変わりはありません。
-
-8. 本ポリシーの変更
-本ポリシーは、本アプリの機能追加や法令の変更等に応じて更新されることがあります。重要な変更がある場合は、アプリ内で可能な範囲でお知らせします。
-
-9. お問い合わせ
-本ポリシーに関するお問い合わせは、アプリストアの開発者情報に記載された連絡先までご連絡ください。
-''';
-
-const _termsOfServiceText = '''
-利用規約
-最終更新日: $_lastUpdated
-
-本利用規約（以下「本規約」）は、Komovia Reversia（以下「本アプリ」）の利用条件を定めるものです。本アプリをご利用いただくことで、本規約に同意したものとみなします。
-
-1. サービス内容
-本アプリは、6×6の盤面を用いた対戦型ボードゲームをAI対局・対人対局（PvP）・日替わりパズルの形式で提供するものです。
-
-2. アカウント
-本アプリはFirebase Authenticationの匿名サインインを使用し、利用者ごとに識別子を発行します。利用者はこの識別子に関連付けられた対局データ・パズル進捗等の管理について自己責任を負います。
-
-3. 禁止事項
-利用者は、本アプリの利用にあたり、以下の行為を行ってはなりません。
-・不正な手段によるレーティングやランキングの操作
-・他の利用者への嫌がらせ、不適切な内容を含むメッセージの送信
-・本アプリのサーバーやデータベースへの不正アクセス、負荷をかける行為
-・その他、法令または公序良俗に反する行為
-
-4. 利用者が投稿する情報
-フレンドへのメッセージ送信など、利用者が本アプリ内で入力・送信する内容について、利用者自身がその内容の責任を負うものとします。
-
-5. サービスの提供
-本アプリは現状有姿で提供され、常時の稼働や特定の品質を保証するものではありません。開発者は、事前の通知なく本アプリの内容を変更、中断、または終了することがあります。
-
-6. 免責事項
-本アプリの利用により利用者に生じた損害について、開発者は法令上許容される範囲で責任を負いません。
-
-7. 本規約の変更
-本規約は、本アプリの機能追加や法令の変更等に応じて更新されることがあります。重要な変更がある場合は、アプリ内で可能な範囲でお知らせします。
-
-8. お問い合わせ
-本規約に関するお問い合わせは、アプリストアの開発者情報に記載された連絡先までご連絡ください。
-''';

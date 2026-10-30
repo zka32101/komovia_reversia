@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../services/onboarding_service.dart';
 
 /// この画面の3ステップ。komovia_shogiの`OnboardingScreen`と同じ構造
@@ -12,28 +13,26 @@ import '../../services/onboarding_service.dart';
 /// komovia_shogiと違い、このアプリはまだFirebase/Riverpodのどちらにも
 /// 依存していない（pubspec.yaml参照）ため、[OnboardingService]は
 /// Providerを経由せず直接構築して使う。
-const _steps = [
-  OnboardingStep(
-    id: 'how-to-move',
-    title: '駒の動かし方',
-    body: '表向きの駒は直交に1マス、裏向きの駒は対角に2マスジャンプします。'
-        '駒をタップすると、動かせるマスがハイライトされます。',
-    icon: 'touch_app',
-  ),
-  OnboardingStep(
-    id: 'win-condition',
-    title: '勝敗',
-    body: '相手の駒がいる場所へ移動すると、その駒を奪って自分の色に変えます'
-        '（石を裏返す点がオセロ的です）。相手のキングを奪うと即座に勝利します。',
-    icon: 'emoji_events_outlined',
-  ),
-  OnboardingStep(
-    id: 'capture-demo',
-    title: '実際にやってみる',
-    body: '表向きの駒をタップして、すぐ上の相手の駒を取ってみましょう',
-    requiresExplicitCompletion: true,
-  ),
-];
+List<OnboardingStep> _steps(AppLocalizations l10n) => [
+      OnboardingStep(
+        id: 'how-to-move',
+        title: l10n.onboardingHowToMoveTitle,
+        body: l10n.onboardingHowToMoveBody,
+        icon: 'touch_app',
+      ),
+      OnboardingStep(
+        id: 'win-condition',
+        title: l10n.onboardingWinConditionTitle,
+        body: l10n.onboardingWinConditionBody,
+        icon: 'emoji_events_outlined',
+      ),
+      OnboardingStep(
+        id: 'capture-demo',
+        title: l10n.onboardingCaptureDemoTitle,
+        body: l10n.onboardingCaptureDemoBody,
+        requiresExplicitCompletion: true,
+      ),
+    ];
 
 IconData? _iconFor(String? name) {
   switch (name) {
@@ -62,7 +61,9 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pageController = PageController();
   final _onboardingService = OnboardingService();
-  OnboardingProgress _progress = const OnboardingProgress(steps: _steps);
+  late List<OnboardingStep> _localizedSteps;
+  late OnboardingProgress _progress;
+  bool _stepsInitialized = false;
 
   @override
   void dispose() {
@@ -90,6 +91,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    if (!_stepsInitialized) {
+      _localizedSteps = _steps(l10n);
+      _progress = OnboardingProgress(steps: _localizedSteps);
+      _stepsInitialized = true;
+    }
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -99,10 +106,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  _RulesCard(step: _steps[0], onNext: _next),
-                  _RulesCard(step: _steps[1], onNext: _next),
+                  _RulesCard(step: _localizedSteps[0], onNext: _next),
+                  _RulesCard(step: _localizedSteps[1], onNext: _next),
                   _CaptureDemoCard(
-                    step: _steps[2],
+                    step: _localizedSteps[2],
                     captured:
                         _progress.completedStepIds.contains('capture-demo'),
                     onCaptured: _onDemoCaptured,
@@ -116,7 +123,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
-                  _steps.length,
+                  _localizedSteps.length,
                   (i) => Container(
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     width: 8,
@@ -165,7 +172,10 @@ class _RulesCard extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 32),
-            FilledButton(onPressed: onNext, child: const Text('次へ')),
+            FilledButton(
+              onPressed: onNext,
+              child: Text(AppLocalizations.of(context)!.onboardingNextButton),
+            ),
           ],
         ),
       ),
@@ -234,6 +244,7 @@ class _CaptureDemoCardState extends State<_CaptureDemoCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -241,7 +252,7 @@ class _CaptureDemoCardState extends State<_CaptureDemoCard> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              widget.captured ? 'やった、1枚取れました！' : widget.step.body,
+              widget.captured ? l10n.onboardingCapturedMessage : widget.step.body,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
@@ -276,14 +287,14 @@ class _CaptureDemoCardState extends State<_CaptureDemoCard> {
             const SizedBox(height: 16),
             if (widget.captured)
               Text(
-                '取った駒は自分の色になります。相手のキングを奪うと勝利です。',
+                l10n.onboardingCapturedFollowUpMessage,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: widget.captured ? widget.onFinished : null,
-              child: const Text('はじめる'),
+              child: Text(l10n.onboardingStartButton),
             ),
           ],
         ),

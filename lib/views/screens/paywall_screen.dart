@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../services/premium_entitlement_service.dart';
 import '../../viewmodels/index.dart';
 
@@ -18,21 +19,18 @@ class PaywallScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final entitlement = ref.watch(premiumEntitlementProvider(uid)).value;
     final isPremium = entitlement?.isCurrentlyActive() ?? false;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('プレミアムサポーター')),
+      appBar: AppBar(title: Text(l10n.paywallTitle)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Komovia Reversiaの開発を応援してくださる方向けのサポータープランです。'
-              '現時点でプレミアムでなければ使えない機能はありませんが、'
-              'ご購入いただくとホーム画面にサポーターバッジが表示されます。',
-            ),
+            Text(l10n.paywallDescription),
             const SizedBox(height: 20),
             if (isPremium)
               Container(
@@ -48,8 +46,12 @@ class PaywallScreen extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'すでにサポーターです（${entitlement!.plan!.label}）'
-                        '${entitlement.expiresAt != null ? ' - ${entitlement.expiresAt!.toLocal().toString().split(' ').first}まで有効' : ''}',
+                        entitlement!.expiresAt != null
+                            ? l10n.paywallAlreadySupporterWithExpiryMessage(
+                                entitlement.plan!.label,
+                                entitlement.expiresAt!.toLocal().toString().split(' ').first,
+                              )
+                            : l10n.paywallAlreadySupporterMessage(entitlement.plan!.label),
                       ),
                     ),
                   ],
@@ -86,8 +88,9 @@ class _PlanCardState extends ConsumerState<_PlanCard> {
     try {
       await ref.read(purchaseSubscriptionProvider)(widget.uid, widget.plan);
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('ご購入ありがとうございます！')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.paywallPurchaseThanksMessage)),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -100,6 +103,7 @@ class _PlanCardState extends ConsumerState<_PlanCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final productAsync = ref.watch(subscriptionProductProvider(widget.plan));
 
     return Card(
@@ -107,9 +111,9 @@ class _PlanCardState extends ConsumerState<_PlanCard> {
       child: ListTile(
         title: Text(widget.plan.label),
         subtitle: productAsync.when(
-          data: (product) => Text(product?.price ?? '価格を取得できませんでした'),
-          loading: () => const Text('価格を取得中...'),
-          error: (err, _) => const Text('価格を取得できませんでした'),
+          data: (product) => Text(product?.price ?? l10n.paywallPriceUnavailableMessage),
+          loading: () => Text(l10n.paywallPriceLoadingMessage),
+          error: (err, _) => Text(l10n.paywallPriceUnavailableMessage),
         ),
         trailing: FilledButton(
           onPressed: _isPurchasing ? null : _purchase,
@@ -119,7 +123,7 @@ class _PlanCardState extends ConsumerState<_PlanCard> {
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('購入する'),
+              : Text(l10n.paywallPurchaseButton),
         ),
       ),
     );

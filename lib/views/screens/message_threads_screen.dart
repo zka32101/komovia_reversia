@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../viewmodels/index.dart';
 import 'chat_screen.dart';
 
@@ -16,14 +17,15 @@ class MessageThreadsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final threadsAsync = ref.watch(messageThreadsProvider(uid));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('メッセージ')),
+      appBar: AppBar(title: Text(l10n.messagesTitle)),
       body: threadsAsync.when(
         data: (threads) {
           if (threads.isEmpty) {
-            return const Center(child: Text('まだ会話はありません'));
+            return Center(child: Text(l10n.messagesEmptyMessage));
           }
           return ListView.separated(
             itemCount: threads.length,
@@ -77,7 +79,7 @@ class MessageThreadsScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(
           child: Text(
-            'エラー: $err',
+            l10n.commonErrorMessage(err.toString()),
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ),
