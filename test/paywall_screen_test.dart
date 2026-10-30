@@ -6,6 +6,7 @@ import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/services/premium_entitlement_service.dart';
 import 'package:komovia_reversia/viewmodels/purchase_provider.dart';
 import 'package:komovia_reversia/views/screens/paywall_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 void main() {
   Future<PremiumEntitlementService> pumpScreen(
@@ -17,7 +18,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [premiumEntitlementServiceProvider.overrideWithValue(service)],
-        child: MaterialApp(home: PaywallScreen(uid: uid)),
+        child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PaywallScreen(uid: uid)),
       ),
     );
     await tester.pump();

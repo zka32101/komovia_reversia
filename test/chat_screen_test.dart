@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:komovia_reversia/services/direct_message_service.dart';
 import 'package:komovia_reversia/viewmodels/direct_message_provider.dart';
 import 'package:komovia_reversia/views/screens/chat_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 void main() {
   Future<DirectMessageService> pumpChat(WidgetTester tester) async {
@@ -14,7 +15,9 @@ void main() {
       ProviderScope(
         overrides: [directMessageServiceProvider.overrideWithValue(service)],
         child: const MaterialApp(
-          home: ChatScreen(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ChatScreen(
             currentUid: 'u1',
             currentDisplayName: 'Alice',
             friendUid: 'u2',
@@ -64,7 +67,9 @@ void main() {
       ProviderScope(
         overrides: [directMessageServiceProvider.overrideWithValue(service)],
         child: const MaterialApp(
-          home: ChatScreen(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ChatScreen(
             currentUid: 'u1',
             currentDisplayName: 'Alice',
             friendUid: 'u2',

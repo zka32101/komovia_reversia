@@ -11,6 +11,7 @@ import 'package:komovia_reversia/viewmodels/reversia_challenge_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_pvp_game_provider.dart';
 import 'package:komovia_reversia/views/screens/reversia_challenge_screen.dart';
 import 'package:komovia_reversia/views/screens/reversia_pvp_game_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 void main() {
   Future<void> pumpScreen(
@@ -30,7 +31,9 @@ void main() {
             notificationServiceProvider.overrideWithValue(notificationService),
         ],
         child: MaterialApp(
-          home: ReversiaChallengeScreen(uid: uid, displayName: 'Alice'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ReversiaChallengeScreen(uid: uid, displayName: 'Alice'),
         ),
       ),
     );

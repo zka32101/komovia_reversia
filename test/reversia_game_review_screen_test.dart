@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 import 'package:komovia_reversia/views/screens/reversia_game_review_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 void main() {
   testWidgets('shows a summary and one tile per reviewed move', (
@@ -14,7 +15,9 @@ void main() {
     final move = game.legalMoves(initial, historyKeys: historyKeys).first;
 
     await tester.pumpWidget(MaterialApp(
-      home: ReversiaGameReviewScreen(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ReversiaGameReviewScreen(
         initialPosition: initial,
         moves: [RecordedMove(number: 1, side: Side.first, move: move)],
         humanSide: Side.first,
@@ -39,7 +42,9 @@ void main() {
     final game = ReversiaGame();
 
     await tester.pumpWidget(MaterialApp(
-      home: ReversiaGameReviewScreen(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ReversiaGameReviewScreen(
         initialPosition: game.initialPosition(),
         moves: const [],
         humanSide: Side.first,
@@ -58,7 +63,9 @@ void main() {
     final move = game.legalMoves(initial, historyKeys: historyKeys).first;
 
     await tester.pumpWidget(MaterialApp(
-      home: ReversiaGameReviewScreen(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ReversiaGameReviewScreen(
         initialPosition: initial,
         moves: [RecordedMove(number: 1, side: Side.first, move: move)],
         humanSide: Side.first,
@@ -85,7 +92,9 @@ void main() {
     final move = game.legalMoves(initial, historyKeys: historyKeys).first;
 
     await tester.pumpWidget(MaterialApp(
-      home: ReversiaGameReviewScreen(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ReversiaGameReviewScreen(
         initialPosition: initial,
         moves: [RecordedMove(number: 1, side: Side.first, move: move)],
         humanSide: Side.first,
@@ -114,7 +123,9 @@ void main() {
     final move = game.legalMoves(initial, historyKeys: historyKeys).first;
 
     await tester.pumpWidget(MaterialApp(
-      home: ReversiaGameReviewScreen(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ReversiaGameReviewScreen(
         initialPosition: initial,
         moves: [RecordedMove(number: 1, side: Side.first, move: move)],
         humanSide: Side.first,
@@ -157,7 +168,9 @@ void main() {
     if (best == worst) return;
 
     await tester.pumpWidget(MaterialApp(
-      home: ReversiaGameReviewScreen(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ReversiaGameReviewScreen(
         initialPosition: position,
         moves: [RecordedMove(number: 1, side: Side.first, move: worst!)],
         humanSide: Side.first,

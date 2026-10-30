@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/reversia_pvp_game.dart';
 import '../../services/reversia_pvp_game_service.dart';
 import '../../utils/reversia_move_feedback.dart';
@@ -122,26 +123,27 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
     if (!mounted) return;
     if (!applied) {
       playReversiaIllegalMoveFeedback();
-      setState(() => _errorMessage = 'その手は指せません');
+      setState(() => _errorMessage = AppLocalizations.of(context)!.pvpGameIllegalMoveMessage);
     } else {
       setState(() => _errorMessage = null);
     }
   }
 
   Future<void> _confirmResign(String uid) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('投了しますか？'),
-        content: const Text('投了すると対局が終了します。'),
+        title: Text(l10n.pvpGameResignDialogTitle),
+        content: Text(l10n.pvpGameResignDialogMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
+            child: Text(l10n.cancelButton),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('投了する'),
+            child: Text(l10n.pvpGameResignConfirmButton),
           ),
         ],
       ),
@@ -151,19 +153,20 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
   }
 
   Future<void> _confirmClaimForfeit(String uid) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('放置勝ちを申請しますか？'),
-        content: const Text('相手が長時間応答していません。申請すると、あなたの勝ちとして対局が終了します。'),
+        title: Text(l10n.pvpGamesListClaimForfeitDialogTitle),
+        content: Text(l10n.pvpGamesListClaimForfeitDialogMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
+            child: Text(l10n.cancelButton),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('申請する'),
+            child: Text(l10n.pvpGamesListClaimForfeitConfirmButton),
           ),
         ],
       ),
@@ -172,35 +175,39 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
     await ref.read(claimReversiaAbandonmentForfeitProvider)(widget.gameId, uid);
   }
 
-  String _statusText(ReversiaPvpGame pvp, Side? humanSide) {
+  String _statusText(AppLocalizations l10n, ReversiaPvpGame pvp, Side? humanSide) {
     if (pvp.isFinished) {
-      if (pvp.winnerUid == null) return '対局が終了しました';
+      if (pvp.winnerUid == null) return l10n.pvpGameFinishedMessage;
       final uid = ref.read(currentUidProvider);
       if (pvp.result == 'forfeit') {
-        return uid == pvp.winnerUid ? '相手の放置により、あなたの勝ちです' : '放置により、あなたの負けです';
+        return uid == pvp.winnerUid
+            ? l10n.pvpGameWonByForfeitMessage
+            : l10n.pvpGameLostByForfeitMessage;
       }
-      if (uid == pvp.winnerUid) return 'あなたの勝ちです！';
-      return 'あなたの負けです';
+      if (uid == pvp.winnerUid) return l10n.youWinStatus;
+      return l10n.youLoseStatus;
     }
-    if (humanSide == null) return '観戦中';
+    if (humanSide == null) return l10n.pvpGameSpectatingStatus;
     return pvp.isTurnOf(ref.read(currentUidProvider) ?? '')
-        ? 'あなたの番です'
-        : '相手の番です';
+        ? l10n.yourTurnStatus
+        : l10n.opponentTurnStatus;
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final uid = ref.watch(currentUidProvider);
     final gameAsync = ref.watch(reversiaPvpGameStreamProvider(widget.gameId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('対局')),
+      appBar: AppBar(title: Text(l10n.pvpGameTitle)),
       body: gameAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('読み込みに失敗しました: $error')),
+        error: (error, _) =>
+            Center(child: Text(l10n.growthLoadFailedMessage(error.toString()))),
         data: (pvp) {
           if (uid == null) {
-            return const Center(child: Text('ログインが必要です'));
+            return Center(child: Text(l10n.pvpGameLoginRequiredMessage));
           }
           final (position, historyKeys) = _replay(pvp.movesRecord);
           final humanSide = _humanSide(pvp, uid);
@@ -212,7 +219,7 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    _statusText(pvp, humanSide),
+                    _statusText(l10n, pvp, humanSide),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   if (_errorMessage != null)
@@ -279,7 +286,7 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
                       padding: const EdgeInsets.only(top: 12),
                       child: OutlinedButton(
                         onPressed: () => _confirmResign(uid),
-                        child: const Text('投了する'),
+                        child: Text(l10n.pvpGameResignButton),
                       ),
                     ),
                   if (pvp.isFinished && humanSide != null)
@@ -287,7 +294,7 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
                       padding: const EdgeInsets.only(top: 12),
                       child: OutlinedButton(
                         onPressed: () => _openReview(pvp, humanSide),
-                        child: const Text('対局を振り返る'),
+                        child: Text(l10n.reviewGameButton),
                       ),
                     ),
                   if (pvp.canClaimAbandonmentForfeit(
@@ -299,7 +306,7 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
                       child: Column(
                         children: [
                           Text(
-                            '相手が長時間応答していません',
+                            l10n.pvpGamesListOpponentInactiveMessage,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.error,
                             ),
@@ -307,7 +314,7 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
                           const SizedBox(height: 8),
                           FilledButton(
                             onPressed: () => _confirmClaimForfeit(uid),
-                            child: const Text('放置勝ちを申請する'),
+                            child: Text(l10n.pvpGamesListClaimForfeitButton),
                           ),
                         ],
                       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:komovia_reversia/views/screens/onboarding_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 /// [OnboardingScreen] exercised through its real UI (not mocked): two
 /// explanation pages, then a real interactive mini board where tapping the
@@ -27,7 +28,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(home: OnboardingScreen(onFinished: () {})),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: OnboardingScreen(onFinished: () {})),
     );
 
     expect(find.text('駒の動かし方'), findsOneWidget);
@@ -46,7 +50,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(home: OnboardingScreen(onFinished: () {})),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: OnboardingScreen(onFinished: () {})),
     );
     await tester.tap(find.text('次へ'));
     await tester.pumpAndSettle();
@@ -63,7 +70,10 @@ void main() {
       'tapping the front-facing piece then the opponent square captures it and enables 「はじめる」',
       (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: OnboardingScreen(onFinished: () {})),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: OnboardingScreen(onFinished: () {})),
     );
     await tester.tap(find.text('次へ'));
     await tester.pumpAndSettle();
@@ -90,6 +100,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: OnboardingScreen(onFinished: () => finished = true),
       ),
     );

@@ -14,6 +14,7 @@ import 'package:komovia_reversia/views/screens/legal_document_screen.dart';
 import 'package:komovia_reversia/views/screens/paywall_screen.dart';
 import 'package:komovia_reversia/views/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 class _FakeNotificationService implements LocalNotificationServiceLike {
   bool permissionGranted = true;
@@ -117,7 +118,9 @@ void main() {
           ),
         ],
         child: MaterialApp(
-          home: SettingsScreen(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(
             uid: uid,
             notificationService: notificationService ?? _FakeNotificationService(),
             preferences: preferences ?? _FakePreferences(),

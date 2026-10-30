@@ -6,6 +6,7 @@ import 'package:komovia_reversia/services/tournament_service.dart';
 import 'package:komovia_reversia/viewmodels/tournament_provider.dart';
 import 'package:komovia_reversia/views/screens/tournament_bracket_screen.dart';
 import 'package:komovia_reversia/views/screens/tournament_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 void main() {
   Future<TournamentService> pumpScreen(
@@ -18,7 +19,9 @@ void main() {
       ProviderScope(
         overrides: [tournamentServiceProvider.overrideWithValue(service)],
         child: MaterialApp(
-          home: TournamentScreen(uid: uid, displayName: 'Alice'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: TournamentScreen(uid: uid, displayName: 'Alice'),
         ),
       ),
     );

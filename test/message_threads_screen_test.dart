@@ -6,6 +6,7 @@ import 'package:komovia_reversia/services/direct_message_service.dart';
 import 'package:komovia_reversia/viewmodels/direct_message_provider.dart';
 import 'package:komovia_reversia/views/screens/chat_screen.dart';
 import 'package:komovia_reversia/views/screens/message_threads_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 void main() {
   Future<DirectMessageService> pumpThreads(
@@ -18,7 +19,9 @@ void main() {
       ProviderScope(
         overrides: [directMessageServiceProvider.overrideWithValue(service)],
         child: MaterialApp(
-          home: MessageThreadsScreen(uid: uid, displayName: 'Alice'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MessageThreadsScreen(uid: uid, displayName: 'Alice'),
         ),
       ),
     );

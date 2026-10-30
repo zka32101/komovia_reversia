@@ -33,6 +33,7 @@ import 'package:komovia_reversia/views/screens/reversia_matching_screen.dart';
 import 'package:komovia_reversia/views/screens/reversia_pvp_games_list_screen.dart';
 import 'package:komovia_reversia/views/screens/settings_screen.dart';
 import 'package:komovia_reversia/views/screens/tournament_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 class _FakeGameSaveService implements GameSaveServiceLike {
   _FakeGameSaveService({this.saved});
@@ -83,7 +84,9 @@ void main() {
             gameSaveServiceProvider.overrideWithValue(gameSaveService),
         ],
         child: MaterialApp(
-          home: HomeScreen(onPlayReversia: onPlayReversia ?? ({bool resume = false}) {}),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: HomeScreen(onPlayReversia: onPlayReversia ?? ({bool resume = false}) {}),
         ),
       ),
     );
@@ -367,7 +370,10 @@ void main() {
           premiumEntitlementServiceProvider
               .overrideWithValue(PremiumEntitlementService(firestore: firestore)),
         ],
-        child: MaterialApp(home: HomeScreen(onPlayReversia: ({bool resume = false}) {})),
+        child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: HomeScreen(onPlayReversia: ({bool resume = false}) {})),
       ),
     );
     await tester.pump();

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 
+import '../../l10n/app_localizations.dart';
+
 /// 対局後の振り返り画面。競合アプリの「棋譜解析」「敗因分析」機能に
 /// 相当 — [ReversiaGameAnalyzer]（評価関数ベースの決定的なローカル解析、
 /// LLMは使わない）で[humanSide]の全着手を最善手と比較し、一手ごとの
@@ -28,6 +30,7 @@ class _ReversiaGameReviewScreenState extends State<ReversiaGameReviewScreen> {
   final Map<int, ReversiaMoveAnnotation> _annotations = {};
 
   Future<void> _editAnnotation(int moveNumber) async {
+    final l10n = AppLocalizations.of(context)!;
     final current = _annotations[moveNumber] ?? const ReversiaMoveAnnotation();
     final controller = TextEditingController(text: current.note);
     var selectedTag = current.tag;
@@ -37,7 +40,7 @@ class _ReversiaGameReviewScreenState extends State<ReversiaGameReviewScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) {
           return AlertDialog(
-            title: Text('$moveNumber手目のメモ'),
+            title: Text(l10n.gameReviewMoveNoteDialogTitle(moveNumber)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,7 +61,7 @@ class _ReversiaGameReviewScreenState extends State<ReversiaGameReviewScreen> {
                 TextField(
                   controller: controller,
                   maxLines: 3,
-                  decoration: const InputDecoration(labelText: 'メモ'),
+                  decoration: InputDecoration(labelText: l10n.gameReviewNoteLabel),
                 ),
               ],
             ),
@@ -66,18 +69,18 @@ class _ReversiaGameReviewScreenState extends State<ReversiaGameReviewScreen> {
               if (!current.isEmpty)
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, const ReversiaMoveAnnotation()),
-                  child: const Text('削除'),
+                  child: Text(l10n.deleteButton),
                 ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, null),
-                child: const Text('キャンセル'),
+                child: Text(l10n.cancelButton),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(
                   ctx,
                   ReversiaMoveAnnotation(tag: selectedTag, note: controller.text),
                 ),
-                child: const Text('保存'),
+                child: Text(l10n.saveButton),
               ),
             ],
           );
@@ -97,6 +100,7 @@ class _ReversiaGameReviewScreenState extends State<ReversiaGameReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final analysis = ReversiaGameAnalyzer().analyze(
       initialPosition: widget.initialPosition,
       moves: widget.moves,
@@ -104,7 +108,7 @@ class _ReversiaGameReviewScreenState extends State<ReversiaGameReviewScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('対局の振り返り')),
+      appBar: AppBar(title: Text(l10n.gameReviewTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -115,7 +119,7 @@ class _ReversiaGameReviewScreenState extends State<ReversiaGameReviewScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '総評',
+                    l10n.gameReviewSummaryTitle,
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
@@ -133,9 +137,9 @@ class _ReversiaGameReviewScreenState extends State<ReversiaGameReviewScreen> {
             const SizedBox(height: 16),
           ],
           if (analysis.moveReviews.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('振り返る着手がありませんでした。'),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(l10n.gameReviewNoMovesMessage),
             )
           else
             ...analysis.moveReviews.map((review) => _MoveReviewTile(
@@ -171,6 +175,7 @@ class _MoveReviewTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final tag = annotation?.tag;
     final note = annotation?.note ?? '';
     return ListTile(
@@ -182,9 +187,12 @@ class _MoveReviewTile extends StatelessWidget {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (review.lossVsBest > 0) Text('最善手との差: ${review.lossVsBest}点'),
+          if (review.lossVsBest > 0)
+            Text(l10n.gameReviewLossVsBestLabel(review.lossVsBest)),
           if (review.bestAlternativeMove != null)
-            Text('最善手: ${reversiaMoveNotation(review.bestAlternativeMove!)}'),
+            Text(l10n.gameReviewBestMoveLabel(
+              reversiaMoveNotation(review.bestAlternativeMove!),
+            )),
           if (note.isNotEmpty) Text(note, style: const TextStyle(fontStyle: FontStyle.italic)),
         ],
       ),
@@ -203,6 +211,7 @@ class _PhaseBreakdownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -210,7 +219,7 @@ class _PhaseBreakdownCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '局面別の傾向',
+              l10n.gameReviewPhaseBreakdownTitle,
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
@@ -237,11 +246,12 @@ class _PhaseRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (stats.moveCount == 0) {
       return Row(
         children: [
           SizedBox(width: 48, child: Text(phase.label)),
-          const Expanded(child: Text('着手なし')),
+          Expanded(child: Text(l10n.gameReviewNoMovesInPhaseMessage)),
         ],
       );
     }
@@ -250,7 +260,10 @@ class _PhaseRow extends StatelessWidget {
         SizedBox(width: 48, child: Text(phase.label)),
         Expanded(
           child: Text(
-            '平均${stats.averageLoss.toStringAsFixed(0)}点 / 悪手${stats.mistakeCount}手',
+            l10n.gameReviewPhaseStatsLabel(
+              stats.averageLoss.toStringAsFixed(0),
+              stats.mistakeCount,
+            ),
           ),
         ),
       ],

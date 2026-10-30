@@ -10,6 +10,7 @@ import 'package:komovia_reversia/viewmodels/friend_provider.dart';
 import 'package:komovia_reversia/viewmodels/notification_provider.dart';
 import 'package:komovia_reversia/views/screens/chat_screen.dart';
 import 'package:komovia_reversia/views/screens/friends_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 void main() {
   Future<FriendService> pumpFriends(
@@ -30,7 +31,9 @@ void main() {
               .overrideWithValue(NotificationService(firestore: firestore)),
         ],
         child: MaterialApp(
-          home: FriendsScreen(uid: uid, displayName: displayName),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: FriendsScreen(uid: uid, displayName: displayName),
         ),
       ),
     );

@@ -361,5 +361,58 @@
   "pvpGamesListClaimForfeitButton": "放置勝ちを申請する",
   "pvpGamesListClaimForfeitDialogTitle": "放置勝ちを申請しますか？",
   "pvpGamesListClaimForfeitDialogMessage": "相手が長時間応答していません。申請すると、あなたの勝ちとして対局が終了します。",
-  "pvpGamesListClaimForfeitConfirmButton": "申請する"
+  "pvpGamesListClaimForfeitConfirmButton": "申請する",
+  "gameReviewMoveNoteDialogTitle": "{moveNumber}手目のメモ",
+  "@gameReviewMoveNoteDialogTitle": {
+    "placeholders": {
+      "moveNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "gameReviewNoteLabel": "メモ",
+  "deleteButton": "削除",
+  "gameReviewTitle": "対局の振り返り",
+  "gameReviewSummaryTitle": "総評",
+  "gameReviewNoMovesMessage": "振り返る着手がありませんでした。",
+  "gameReviewLossVsBestLabel": "最善手との差: {loss}点",
+  "@gameReviewLossVsBestLabel": {
+    "placeholders": {
+      "loss": {
+        "type": "int"
+      }
+    }
+  },
+  "gameReviewBestMoveLabel": "最善手: {move}",
+  "@gameReviewBestMoveLabel": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      }
+    }
+  },
+  "gameReviewPhaseBreakdownTitle": "局面別の傾向",
+  "gameReviewNoMovesInPhaseMessage": "着手なし",
+  "gameReviewPhaseStatsLabel": "平均{averageLoss}点 / 悪手{mistakeCount}手",
+  "@gameReviewPhaseStatsLabel": {
+    "placeholders": {
+      "averageLoss": {
+        "type": "String"
+      },
+      "mistakeCount": {
+        "type": "int"
+      }
+    }
+  },
+  "pvpGameIllegalMoveMessage": "その手は指せません",
+  "pvpGameResignDialogTitle": "投了しますか？",
+  "pvpGameResignDialogMessage": "投了すると対局が終了します。",
+  "pvpGameResignConfirmButton": "投了する",
+  "pvpGameFinishedMessage": "対局が終了しました",
+  "pvpGameWonByForfeitMessage": "相手の放置により、あなたの勝ちです",
+  "pvpGameLostByForfeitMessage": "放置により、あなたの負けです",
+  "pvpGameSpectatingStatus": "観戦中",
+  "pvpGameTitle": "対局",
+  "pvpGameLoginRequiredMessage": "ログインが必要です",
+  "pvpGameResignButton": "投了する"
 }

@@ -7,6 +7,7 @@ import 'package:komovia_reversia/services/reversia_pvp_game_service.dart';
 import 'package:komovia_reversia/viewmodels/reversia_pvp_game_provider.dart';
 import 'package:komovia_reversia/views/screens/reversia_pvp_game_screen.dart';
 import 'package:komovia_reversia/views/screens/reversia_pvp_games_list_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 void main() {
   Future<void> pumpScreen(
@@ -17,7 +18,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [reversiaPvpGameServiceProvider.overrideWithValue(service)],
-        child: MaterialApp(home: ReversiaPvpGamesListScreen(uid: uid)),
+        child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ReversiaPvpGamesListScreen(uid: uid)),
       ),
     );
     await tester.pump();
