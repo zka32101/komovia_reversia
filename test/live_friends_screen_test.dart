@@ -9,6 +9,7 @@ import 'package:komovia_reversia/viewmodels/friend_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_pvp_game_provider.dart';
 import 'package:komovia_reversia/views/screens/live_friends_screen.dart';
 import 'package:komovia_reversia/views/screens/reversia_pvp_game_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 void main() {
   Future<void> seedUser(FakeFirebaseFirestore firestore, String uid, String name) async {
@@ -28,7 +29,10 @@ void main() {
           reversiaPvpGameServiceProvider
               .overrideWithValue(ReversiaPvpGameService(firestore)),
         ],
-        child: MaterialApp(home: LiveFriendsScreen(uid: uid)),
+        child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: LiveFriendsScreen(uid: uid)),
       ),
     );
     await tester.pump();

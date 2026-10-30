@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../services/achievement_service.dart';
 import '../../viewmodels/index.dart';
 
@@ -12,10 +13,11 @@ class AchievementsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final progressAsync = ref.watch(achievementProgressProvider(uid));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('実績')),
+      appBar: AppBar(title: Text(l10n.achievementsTitle)),
       body: progressAsync.when(
         data: (progress) => GridView.builder(
           padding: const EdgeInsets.all(16),
@@ -31,7 +33,7 @@ class AchievementsScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(
           child: Text(
-            'エラー: $err',
+            l10n.commonErrorMessage(err.toString()),
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ),

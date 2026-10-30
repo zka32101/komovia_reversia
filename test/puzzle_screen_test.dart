@@ -12,6 +12,7 @@ import 'package:komovia_reversia/viewmodels/auth_provider.dart';
 import 'package:komovia_reversia/viewmodels/leaderboard_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_puzzle_log_provider.dart';
 import 'package:komovia_reversia/views/screens/puzzle_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 /// Drives [PuzzleScreen] through its real UI against today's actual puzzle
 /// (`reversiaPuzzleForDate(DateTime.now())`), rather than a fixed/mocked
@@ -43,7 +44,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [currentUidProvider.overrideWithValue(null)],
-        child: const MaterialApp(home: PuzzleScreen()),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PuzzleScreen()),
       ),
     );
     await tester.pump();
@@ -56,7 +60,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [currentUidProvider.overrideWithValue(null)],
-        child: const MaterialApp(home: PuzzleScreen()),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PuzzleScreen()),
       ),
     );
     await tester.pump();
@@ -74,7 +81,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [currentUidProvider.overrideWithValue(null)],
-        child: const MaterialApp(home: PuzzleScreen()),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PuzzleScreen()),
       ),
     );
     await tester.pump();
@@ -121,7 +131,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [currentUidProvider.overrideWithValue(null)],
-          child: const MaterialApp(home: PuzzleScreen()),
+          child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PuzzleScreen()),
         ),
       );
       await tester.pump();
@@ -138,7 +151,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [currentUidProvider.overrideWithValue(null)],
-          child: const MaterialApp(home: PuzzleScreen()),
+          child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PuzzleScreen()),
         ),
       );
       await tester.pump();
@@ -162,7 +178,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [currentUidProvider.overrideWithValue(null)],
-        child: const MaterialApp(home: PuzzleScreen()),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PuzzleScreen()),
       ),
     );
     await tester.pump();
@@ -188,7 +207,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [currentUidProvider.overrideWithValue(null)],
-        child: const MaterialApp(home: PuzzleScreen()),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PuzzleScreen()),
       ),
     );
     await tester.pump();
@@ -209,7 +231,10 @@ void main() {
           reversiaPuzzleLogServiceProvider.overrideWithValue(puzzleLogService),
           leaderboardServiceProvider.overrideWithValue(leaderboardService),
         ],
-        child: const MaterialApp(home: PuzzleScreen()),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PuzzleScreen()),
       ),
     );
     await tester.pump();
@@ -245,7 +270,10 @@ void main() {
           reversiaPuzzleLogServiceProvider.overrideWithValue(puzzleLogService),
           leaderboardServiceProvider.overrideWithValue(leaderboardService),
         ],
-        child: const MaterialApp(home: PuzzleScreen()),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PuzzleScreen()),
       ),
     );
     await tester.pump();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../viewmodels/index.dart';
 import 'reversia_pvp_game_screen.dart';
 
@@ -16,19 +17,20 @@ class LiveFriendsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final liveFriends = ref.watch(liveFriendsProvider(uid));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('ライブ観戦フレンド')),
+      appBar: AppBar(title: Text(l10n.liveFriendsTitle)),
       body: liveFriends.when(
         data: (activities) => activities.isEmpty
-            ? const Center(child: Text('いま対局中のフレンドはいません'))
+            ? Center(child: Text(l10n.liveFriendsEmptyMessage))
             : ListView(
                 children: activities.map((a) {
                   return ListTile(
                     leading: const Icon(Icons.live_tv),
                     title: Text(a.friendDisplayName),
-                    subtitle: const Text('対局中'),
+                    subtitle: Text(l10n.liveFriendsPlayingNowLabel),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () => Navigator.push(
                       context,
@@ -41,7 +43,7 @@ class LiveFriendsScreen extends ConsumerWidget {
                 }).toList(),
               ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => const Center(child: Text('読み込みに失敗しました')),
+        error: (_, __) => Center(child: Text(l10n.commonLoadFailedMessage)),
       ),
     );
   }

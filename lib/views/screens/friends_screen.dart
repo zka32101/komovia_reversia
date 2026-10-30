@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/user_search_result.dart';
 import '../../viewmodels/index.dart';
 import 'chat_screen.dart';
@@ -16,41 +17,42 @@ class FriendsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('フレンド'),
+          title: Text(l10n.homeFriendsTitle),
           actions: [
             IconButton(
               icon: const Icon(Icons.person_add),
-              tooltip: 'フレンドを追加',
+              tooltip: l10n.friendsAddTooltip,
               onPressed: () => _showAddFriendDialog(context, ref),
             ),
           ],
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: [
-              Tab(text: 'フレンド'),
-              Tab(text: '招待待ち'),
-              Tab(text: 'ブロック中'),
+              Tab(text: l10n.homeFriendsTitle),
+              Tab(text: l10n.friendsPendingTab),
+              Tab(text: l10n.friendsBlockedTab),
             ],
           ),
         ),
         body: TabBarView(
           children: [
-            _buildFriendsTab(context, ref),
-            _buildPendingTab(ref),
-            _buildBlockedTab(ref),
+            _buildFriendsTab(context, ref, l10n),
+            _buildPendingTab(ref, l10n),
+            _buildBlockedTab(ref, l10n),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFriendsTab(BuildContext context, WidgetRef ref) {
+  Widget _buildFriendsTab(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
     final friends = ref.watch(friendsStreamProvider(uid)).value ?? [];
     if (friends.isEmpty) {
-      return const Center(child: Text('フレンドはまだいません'));
+      return Center(child: Text(l10n.friendsEmptyMessage));
     }
     return ListView(
       children: friends
@@ -63,7 +65,7 @@ class FriendsScreen extends ConsumerWidget {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.message_outlined),
-                    tooltip: 'メッセージ',
+                    tooltip: l10n.messagesTitle,
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => ChatScreen(
@@ -77,7 +79,7 @@ class FriendsScreen extends ConsumerWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.block),
-                    tooltip: 'ブロック',
+                    tooltip: l10n.friendsBlockTooltip,
                     onPressed: () =>
                         ref.read(blockFriendProvider)(uid, f.friendUid),
                   ),
@@ -89,10 +91,10 @@ class FriendsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPendingTab(WidgetRef ref) {
+  Widget _buildPendingTab(WidgetRef ref, AppLocalizations l10n) {
     final pending = ref.watch(pendingFriendsStreamProvider(uid)).value ?? [];
     if (pending.isEmpty) {
-      return const Center(child: Text('招待待ちの申請はありません'));
+      return Center(child: Text(l10n.friendsPendingEmptyMessage));
     }
     return ListView(
       children: pending.map((f) {
@@ -100,20 +102,22 @@ class FriendsScreen extends ConsumerWidget {
         return ListTile(
           leading: const Icon(Icons.person_outline),
           title: Text(f.displayName),
-          subtitle: Text(incoming ? '申請が届いています' : '送信済み - 相手の返答待ち'),
+          subtitle: Text(
+            incoming ? l10n.friendsIncomingRequestLabel : l10n.friendsSentRequestLabel,
+          ),
           trailing: incoming
               ? Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: const Icon(Icons.check, color: Colors.green),
-                      tooltip: '承認する',
+                      tooltip: l10n.friendsAcceptTooltip,
                       onPressed: () =>
                           ref.read(acceptFriendRequestProvider)(uid, f.friendUid),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close, color: Colors.red),
-                      tooltip: '拒否する',
+                      tooltip: l10n.friendsRejectTooltip,
                       onPressed: () =>
                           ref.read(rejectFriendRequestProvider)(uid, f.friendUid),
                     ),
@@ -122,17 +126,17 @@ class FriendsScreen extends ConsumerWidget {
               : TextButton(
                   onPressed: () =>
                       ref.read(rejectFriendRequestProvider)(uid, f.friendUid),
-                  child: const Text('キャンセル'),
+                  child: Text(l10n.cancelButton),
                 ),
         );
       }).toList(),
     );
   }
 
-  Widget _buildBlockedTab(WidgetRef ref) {
+  Widget _buildBlockedTab(WidgetRef ref, AppLocalizations l10n) {
     final blocked = ref.watch(blockedFriendsStreamProvider(uid)).value ?? [];
     if (blocked.isEmpty) {
-      return const Center(child: Text('ブロック中のフレンドはいません'));
+      return Center(child: Text(l10n.friendsBlockedEmptyMessage));
     }
     return ListView(
       children: blocked.map((f) {
@@ -142,7 +146,7 @@ class FriendsScreen extends ConsumerWidget {
           trailing: TextButton(
             onPressed: () =>
                 ref.read(unblockFriendProvider)(uid, f.friendUid),
-            child: const Text('ブロック解除'),
+            child: Text(l10n.friendsUnblockButton),
           ),
         );
       }).toList(),
@@ -150,6 +154,7 @@ class FriendsScreen extends ConsumerWidget {
   }
 
   void _showAddFriendDialog(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     var results = <UserSearchResult>[];
     var searching = false;
@@ -169,7 +174,7 @@ class FriendsScreen extends ConsumerWidget {
           }
 
           return AlertDialog(
-            title: const Text('フレンドを追加'),
+            title: Text(l10n.friendsAddTooltip),
             content: SizedBox(
               width: double.maxFinite,
               child: Column(
@@ -178,9 +183,9 @@ class FriendsScreen extends ConsumerWidget {
                 children: [
                   TextField(
                     controller: controller,
-                    decoration: const InputDecoration(
-                      labelText: '表示名で検索',
-                      prefixIcon: Icon(Icons.search),
+                    decoration: InputDecoration(
+                      labelText: l10n.friendsSearchByDisplayNameLabel,
+                      prefixIcon: const Icon(Icons.search),
                     ),
                     onSubmitted: runSearch,
                   ),
@@ -191,9 +196,9 @@ class FriendsScreen extends ConsumerWidget {
                       child: Center(child: CircularProgressIndicator()),
                     )
                   else if (results.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(8),
-                      child: Text('検索ボックスに表示名を入れて検索してください'),
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Text(l10n.friendsSearchHintMessage),
                     )
                   else
                     ConstrainedBox(
@@ -215,7 +220,7 @@ class FriendsScreen extends ConsumerWidget {
                                       );
                                       setState(() => sentToUid = {...sentToUid, r.uid});
                                     },
-                                    child: const Text('申請'),
+                                    child: Text(l10n.friendsRequestButton),
                                   ),
                           );
                         }).toList(),
@@ -227,11 +232,11 @@ class FriendsScreen extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: () => runSearch(controller.text),
-                child: const Text('検索'),
+                child: Text(l10n.friendsSearchButton),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('閉じる'),
+                child: Text(l10n.closeButton),
               ),
             ],
           );

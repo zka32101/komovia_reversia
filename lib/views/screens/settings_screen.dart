@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../services/avatar_preferences.dart';
 import '../../services/daily_reminder_preferences.dart';
 import '../../services/local_notification_service.dart';
@@ -75,10 +76,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _pickAvatar() async {
+    final l10n = AppLocalizations.of(context)!;
     final selected = await showDialog<ReversiaAvatar>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('アバターを選ぶ'),
+        title: Text(l10n.settingsChooseAvatarTitle),
         children: [
           for (final avatar in ReversiaAvatar.all)
             RadioListTile<ReversiaAvatar>(
@@ -109,8 +111,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final granted = await widget.notificationService.requestPermission();
       if (!granted) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('通知の許可が必要です')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.settingsNotificationPermissionRequiredMessage)),
+        );
         return;
       }
       await widget.notificationService.scheduleDailyReminder(
@@ -148,14 +151,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('設定')),
+      appBar: AppBar(title: Text(l10n.homeSettingsTitle)),
       body: ListView(
         children: [
           if (_loaded)
             ListTile(
               leading: Text(_avatar.emoji, style: const TextStyle(fontSize: 28)),
-              title: const Text('アバター'),
+              title: Text(l10n.settingsAvatarLabel),
               subtitle: Text(_avatar.label),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: _pickAvatar,
@@ -163,7 +167,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (widget.uid != null)
             ListTile(
               leading: const Icon(Icons.workspace_premium_outlined),
-              title: const Text('プレミアムサポーター'),
+              title: Text(l10n.paywallTitle),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => Navigator.push(
                 context,
@@ -173,30 +177,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (_loaded) ...[
             SwitchListTile(
               secondary: const Icon(Icons.notifications_active_outlined),
-              title: const Text('デイリーリマインダー'),
-              subtitle: Text(_reminderEnabled ? '毎日 $_formattedTime に通知' : 'オフ'),
+              title: Text(l10n.settingsDailyReminderLabel),
+              subtitle: Text(
+                _reminderEnabled
+                    ? l10n.settingsDailyReminderOnSubtitle(_formattedTime)
+                    : l10n.settingsOffLabel,
+              ),
               value: _reminderEnabled,
               onChanged: _setReminderEnabled,
             ),
             if (_reminderEnabled)
               ListTile(
                 leading: const Icon(Icons.schedule),
-                title: const Text('通知時刻'),
+                title: Text(l10n.settingsReminderTimeLabel),
                 subtitle: Text(_formattedTime),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: _pickReminderTime,
               ),
             SwitchListTile(
               secondary: const Icon(Icons.volume_up_outlined),
-              title: const Text('着手の効果音・バイブ'),
-              subtitle: Text(_feedbackEnabled ? 'オン' : 'オフ'),
+              title: Text(l10n.settingsMoveFeedbackLabel),
+              subtitle: Text(_feedbackEnabled ? l10n.settingsOnLabel : l10n.settingsOffLabel),
               value: _feedbackEnabled,
               onChanged: _setFeedbackEnabled,
             ),
           ],
           ListTile(
             leading: const Icon(Icons.help_outline),
-            title: const Text('遊び方'),
+            title: Text(l10n.howToPlayTitle),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () => Navigator.push(
               context,
@@ -205,7 +213,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
-            title: const Text('プライバシーポリシー'),
+            title: Text(l10n.privacyPolicyTitle),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () => Navigator.push(
               context,
@@ -218,7 +226,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.description_outlined),
-            title: const Text('利用規約'),
+            title: Text(l10n.termsOfServiceTitle),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () => Navigator.push(
               context,

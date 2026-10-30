@@ -6,6 +6,7 @@ import 'package:komovia_reversia/services/reversia_weekly_progress_service.dart'
 import 'package:komovia_reversia/viewmodels/auth_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_weekly_progress_provider.dart';
 import 'package:komovia_reversia/views/screens/reversia_weekly_goals_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 void main() {
   Future<ReversiaWeeklyProgressService> pumpScreen(
@@ -20,7 +21,10 @@ void main() {
           currentUidProvider.overrideWithValue(uid),
           reversiaWeeklyProgressServiceProvider.overrideWithValue(service),
         ],
-        child: const MaterialApp(home: ReversiaWeeklyGoalsScreen()),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ReversiaWeeklyGoalsScreen()),
       ),
     );
     await tester.pump();

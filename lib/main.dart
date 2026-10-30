@@ -11,6 +11,7 @@ import 'package:komovia_reversia/komovia_reversia.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'firebase_options.dart';
+import 'l10n/app_localizations.dart';
 import 'services/board_theme_preferences.dart';
 import 'services/game_save_service.dart';
 import 'services/onboarding_service.dart';
@@ -68,6 +69,8 @@ class KomoviaReversiaApp extends StatelessWidget {
     return MaterialApp(
       title: 'Komovia Reversia',
       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal)),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: const _RootScreen(),
     );
   }
@@ -516,14 +519,15 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
   /// ハンディキャップを選び直す（常に新規対局として始め直す - 対局中に
   /// 内容を変えると現在の局面と矛盾するため）。
   Future<void> _pickHandicap() async {
+    final l10n = AppLocalizations.of(context)!;
     final selected = await showDialog<ReversiaHandicapRule?>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => SimpleDialog(
-        title: const Text('ハンディキャップ'),
+        title: Text(l10n.handicapDialogTitle),
         children: [
           RadioListTile<ReversiaHandicapRule?>(
-            title: const Text('なし'),
+            title: Text(l10n.handicapNoneOption),
             value: null,
             groupValue: _handicap,
             onChanged: (v) => Navigator.pop(ctx, v),
@@ -547,20 +551,21 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
   /// キャップと同じく、切り替えると手番制御の前提が変わるため常に新規
   /// 対局として始め直す。
   Future<void> _pickGameMode() async {
+    final l10n = AppLocalizations.of(context)!;
     final selected = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => SimpleDialog(
-        title: const Text('対局モード'),
+        title: Text(l10n.gameModeDialogTitle),
         children: [
           RadioListTile<bool>(
-            title: const Text('AI対局'),
+            title: Text(l10n.gameModeAiOption),
             value: false,
             groupValue: _twoPlayerMode,
             onChanged: (v) => Navigator.pop(ctx, v),
           ),
           RadioListTile<bool>(
-            title: const Text('2人対局（同じ端末）'),
+            title: Text(l10n.gameModeTwoPlayerOption),
             value: true,
             groupValue: _twoPlayerMode,
             onChanged: (v) => Navigator.pop(ctx, v),
@@ -573,21 +578,25 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     _newGame();
   }
 
-  static const _aiLevelLabels = {1: '初級', 2: '中級', 3: '上級'};
-
   /// AIの強さを選び直す。ハンディキャップと違い、今後の着手にのみ影響
   /// するため新規対局として始め直す必要は無い（対局中に変更しても
   /// 現在の局面・着手履歴と矛盾しない）。
   Future<void> _pickAiLevel() async {
+    final l10n = AppLocalizations.of(context)!;
+    final aiLevelLabels = {
+      1: l10n.aiLevelBeginner,
+      2: l10n.aiLevelIntermediate,
+      3: l10n.aiLevelAdvanced,
+    };
     final selected = await showDialog<int>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => SimpleDialog(
-        title: const Text('AIの強さ'),
+        title: Text(l10n.aiLevelDialogTitle),
         children: [
-          for (final level in _aiLevelLabels.keys)
+          for (final level in aiLevelLabels.keys)
             RadioListTile<int>(
-              title: Text(_aiLevelLabels[level]!),
+              title: Text(aiLevelLabels[level]!),
               value: level,
               groupValue: _aiLevel,
               onChanged: (v) => Navigator.pop(ctx, v),
@@ -602,11 +611,12 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
   /// 盤・駒の配色テーマを選び直す。局面には影響しないため新規対局として
   /// 始め直す必要は無い（AIの強さと同じ考え方）。
   Future<void> _pickBoardTheme() async {
+    final l10n = AppLocalizations.of(context)!;
     final selected = await showDialog<ReversiaBoardTheme>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => SimpleDialog(
-        title: const Text('盤の配色'),
+        title: Text(l10n.boardThemeDialogTitle),
         children: [
           for (final theme in ReversiaBoardTheme.all)
             RadioListTile<ReversiaBoardTheme>(
@@ -630,28 +640,35 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     widget.themePreferences.setTheme(selected);
   }
 
-  String get _statusText {
+  String _statusText(AppLocalizations l10n) {
     final result = _result;
     if (result.isOngoing) {
-      if (_aiThinking) return 'AIが考えています…';
+      if (_aiThinking) return l10n.aiThinkingStatus;
       if (_twoPlayerMode) {
-        return _position.sideToMove == Side.first ? '先手の番です' : '後手の番です';
+        return _position.sideToMove == Side.first
+            ? l10n.firstPlayerTurnStatus
+            : l10n.secondPlayerTurnStatus;
       }
-      return _position.sideToMove == Side.first ? 'あなたの番です' : '相手の番です';
+      return _position.sideToMove == Side.first
+          ? l10n.yourTurnStatus
+          : l10n.opponentTurnStatus;
     }
-    if (result.kind == ResultKind.draw) return '引き分けです';
+    if (result.kind == ResultKind.draw) return l10n.drawStatus;
     if (_twoPlayerMode) {
-      return result.winner == Side.first ? '先手の勝ちです！' : '後手の勝ちです！';
+      return result.winner == Side.first
+          ? l10n.firstPlayerWinStatus
+          : l10n.secondPlayerWinStatus;
     }
     final youWon = result.winner == Side.first;
-    return youWon ? 'あなたの勝ちです！' : 'あなたの負けです';
+    return youWon ? l10n.youWinStatus : l10n.youLoseStatus;
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Komovia Reversia'),
+        title: Text(l10n.appTitle),
         actions: [
           Consumer(
             builder: (context, ref, _) {
@@ -662,7 +679,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.notifications),
-                    tooltip: '通知',
+                    tooltip: l10n.notificationsTooltip,
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -697,7 +714,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
               final uid = ref.watch(currentUidProvider);
               return IconButton(
                 icon: const Icon(Icons.group),
-                tooltip: '対局相手を探す',
+                tooltip: l10n.findOpponentTooltip,
                 onPressed: uid == null
                     ? null
                     : () => Navigator.push(
@@ -714,7 +731,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.lightbulb_outline),
-            tooltip: 'ヒント',
+            tooltip: l10n.hintTooltip,
             onPressed:
                 (_result.isOngoing &&
                         !_aiThinking &&
@@ -724,12 +741,12 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.undo),
-            tooltip: '待った',
+            tooltip: l10n.undoTooltip,
             onPressed: _moveRecord.isEmpty ? null : _undo,
           ),
           IconButton(
             icon: const Icon(Icons.leaderboard),
-            tooltip: 'ランキング',
+            tooltip: l10n.leaderboardTooltip,
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
@@ -737,7 +754,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.calendar_today),
-            tooltip: '今日の1局',
+            tooltip: l10n.dailyPuzzleTooltip,
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const PuzzleScreen()),
@@ -745,34 +762,34 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
           ),
           IconButton(
             icon: Icon(_twoPlayerMode ? Icons.people_outline : Icons.smart_toy),
-            tooltip: '対局モード',
+            tooltip: l10n.gameModeTooltip,
             onPressed: _pickGameMode,
           ),
           if (!_twoPlayerMode)
             IconButton(
               icon: const Icon(Icons.smart_toy_outlined),
-              tooltip: 'AIの強さ',
+              tooltip: l10n.aiLevelTooltip,
               onPressed: _pickAiLevel,
             ),
           IconButton(
             icon: const Icon(Icons.palette_outlined),
-            tooltip: '盤の配色',
+            tooltip: l10n.boardThemeTooltip,
             onPressed: _pickBoardTheme,
           ),
           IconButton(
             key: const Key('reversia_flip_board_button'),
             icon: const Icon(Icons.flip),
-            tooltip: '盤面を反転',
+            tooltip: l10n.flipBoardTooltip,
             onPressed: () => setState(() => _boardFlipped = !_boardFlipped),
           ),
           IconButton(
             icon: const Icon(Icons.balance),
-            tooltip: 'ハンディキャップ',
+            tooltip: l10n.handicapTooltip,
             onPressed: _pickHandicap,
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: '新しい対局',
+            tooltip: l10n.newGameTooltip,
             onPressed: _newGame,
           ),
         ],
@@ -783,7 +800,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_statusText, style: Theme.of(context).textTheme.titleMedium),
+              Text(_statusText(l10n), style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -845,14 +862,14 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
                   padding: const EdgeInsets.only(top: 12),
                   child: FilledButton(
                     onPressed: _newGame,
-                    child: const Text('もう一度'),
+                    child: Text(l10n.playAgainButton),
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: OutlinedButton(
                     onPressed: _moveRecord.isEmpty ? null : _openReview,
-                    child: const Text('対局を振り返る'),
+                    child: Text(l10n.reviewGameButton),
                   ),
                 ),
                 Padding(
@@ -860,7 +877,7 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
                   child: OutlinedButton.icon(
                     onPressed: _shareResult,
                     icon: const Icon(Icons.share),
-                    label: const Text('結果をシェア'),
+                    label: Text(l10n.shareResultButton),
                   ),
                 ),
               ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../viewmodels/index.dart';
 
 /// 「成長の記録」画面 - komovia_shogi/komovia_goの`GrowthScreen`と同じ役割
@@ -16,21 +17,23 @@ class GrowthScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final entryAsync = ref.watch(myLeaderboardEntryProvider);
     final statsAsync = ref.watch(myReversiaGameStatsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('成長の記録')),
+      appBar: AppBar(title: Text(l10n.growthTitle)),
       body: entryAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('読み込みに失敗しました: $error')),
+        error: (error, stack) =>
+            Center(child: Text(l10n.growthLoadFailedMessage(error.toString()))),
         data: (entry) {
           if (entry == null || entry.gamesPlayed == 0) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
                 child: Text(
-                  'まだ対局記録がありません。\nAIと対局すると、ここに成長の記録が表示されます。',
+                  l10n.growthNoRecordsMessage,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -42,7 +45,7 @@ class GrowthScreen extends ConsumerWidget {
             children: [
               _StatCard(
                 icon: Icons.military_tech,
-                label: '現在のレーティング',
+                label: l10n.growthCurrentRatingLabel,
                 value: '${entry.rating}',
               ),
               const SizedBox(height: 12),
@@ -51,7 +54,7 @@ class GrowthScreen extends ConsumerWidget {
                   Expanded(
                     child: _StatCard(
                       icon: Icons.sports_esports,
-                      label: '対局数',
+                      label: l10n.growthGamesPlayedLabel,
                       value: '${entry.gamesPlayed}',
                     ),
                   ),
@@ -59,7 +62,7 @@ class GrowthScreen extends ConsumerWidget {
                   Expanded(
                     child: _StatCard(
                       icon: Icons.emoji_events,
-                      label: '勝率',
+                      label: l10n.growthWinRateLabel,
                       value: '${(entry.winRate * 100).toStringAsFixed(0)}%',
                     ),
                   ),
@@ -72,7 +75,7 @@ class GrowthScreen extends ConsumerWidget {
                     Expanded(
                       child: _StatCard(
                         icon: Icons.handshake_outlined,
-                        label: '引き分け',
+                        label: l10n.growthDrawsLabel,
                         value: '${stats.draws}',
                       ),
                     ),
@@ -80,7 +83,7 @@ class GrowthScreen extends ConsumerWidget {
                     Expanded(
                       child: _StatCard(
                         icon: Icons.local_fire_department,
-                        label: '現在の連勝',
+                        label: l10n.growthCurrentStreakLabel,
                         value: '${stats.currentWinStreak}',
                       ),
                     ),
@@ -88,7 +91,7 @@ class GrowthScreen extends ConsumerWidget {
                     Expanded(
                       child: _StatCard(
                         icon: Icons.whatshot,
-                        label: '最長連勝',
+                        label: l10n.growthLongestStreakLabel,
                         value: '${stats.longestWinStreak}',
                       ),
                     ),
@@ -101,7 +104,7 @@ class GrowthScreen extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    _encouragement(entry.gamesPlayed, entry.winRate),
+                    _encouragement(l10n, entry.gamesPlayed, entry.winRate),
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ),
@@ -116,14 +119,14 @@ class GrowthScreen extends ConsumerWidget {
   /// 勝率がどうであれ、常に前向きなメッセージを返す - 負けが続いても
   /// 遊び続けてもらうという、シリーズ共通のコンセプトのため、
   /// 「もっと頑張れ」のような否定的な表現は使わない。
-  String _encouragement(int gamesPlayed, double winRate) {
+  String _encouragement(AppLocalizations l10n, int gamesPlayed, double winRate) {
     if (gamesPlayed < 5) {
-      return 'ここからが始まりです。対局を重ねるごとに、着実に力がついていきます。';
+      return l10n.growthEncouragementBeginner;
     }
     if (winRate >= 0.6) {
-      return '素晴らしい勝率です！この調子で指し続けましょう。';
+      return l10n.growthEncouragementGoodWinRate;
     }
-    return '$gamesPlayed局、よく指し続けています。一局ごとの経験が、確かな力になっています。';
+    return l10n.growthEncouragementKeepGoing(gamesPlayed);
   }
 }
 

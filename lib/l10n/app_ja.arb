@@ -1,0 +1,418 @@
+{
+  "@@locale": "ja",
+  "appTitle": "Komovia Reversia",
+  "handicapDialogTitle": "ハンディキャップ",
+  "handicapNoneOption": "なし",
+  "gameModeDialogTitle": "対局モード",
+  "gameModeAiOption": "AI対局",
+  "gameModeTwoPlayerOption": "2人対局（同じ端末）",
+  "aiLevelDialogTitle": "AIの強さ",
+  "aiLevelBeginner": "初級",
+  "aiLevelIntermediate": "中級",
+  "aiLevelAdvanced": "上級",
+  "boardThemeDialogTitle": "盤の配色",
+  "notificationsTooltip": "通知",
+  "findOpponentTooltip": "対局相手を探す",
+  "hintTooltip": "ヒント",
+  "undoTooltip": "待った",
+  "leaderboardTooltip": "ランキング",
+  "dailyPuzzleTooltip": "今日の1局",
+  "gameModeTooltip": "対局モード",
+  "aiLevelTooltip": "AIの強さ",
+  "boardThemeTooltip": "盤の配色",
+  "flipBoardTooltip": "盤面を反転",
+  "handicapTooltip": "ハンディキャップ",
+  "newGameTooltip": "新しい対局",
+  "aiThinkingStatus": "AIが考えています…",
+  "firstPlayerTurnStatus": "先手の番です",
+  "secondPlayerTurnStatus": "後手の番です",
+  "yourTurnStatus": "あなたの番です",
+  "opponentTurnStatus": "相手の番です",
+  "drawStatus": "引き分けです",
+  "firstPlayerWinStatus": "先手の勝ちです！",
+  "secondPlayerWinStatus": "後手の勝ちです！",
+  "youWinStatus": "あなたの勝ちです！",
+  "youLoseStatus": "あなたの負けです",
+  "playAgainButton": "もう一度",
+  "reviewGameButton": "対局を振り返る",
+  "shareResultButton": "結果をシェア",
+  "leaderboardTitle": "ランキング",
+  "leaderboardEmptyMessage": "まだランキングに登録された対局者がいません",
+  "leaderboardWinsSubtitle": "{wins}/{gamesPlayed} 勝 ({winRate}%)",
+  "@leaderboardWinsSubtitle": {
+    "placeholders": {
+      "wins": {
+        "type": "int"
+      },
+      "gamesPlayed": {
+        "type": "int"
+      },
+      "winRate": {
+        "type": "String"
+      }
+    }
+  },
+  "commonLoadFailedMessage": "読み込みに失敗しました",
+  "liveFriendsTitle": "ライブ観戦フレンド",
+  "liveFriendsEmptyMessage": "いま対局中のフレンドはいません",
+  "liveFriendsPlayingNowLabel": "対局中",
+  "commonErrorMessage": "エラー: {error}",
+  "@commonErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "achievementsTitle": "実績",
+  "messagesTitle": "メッセージ",
+  "messagesEmptyMessage": "まだ会話はありません",
+  "chatSendFailedMessage": "メッセージの送信に失敗しました",
+  "chatEmptyMessage": "まだメッセージはありません",
+  "chatMessageHint": "メッセージ",
+  "chatSendTooltip": "送信",
+  "howToPlayTitle": "遊び方",
+  "howToPlayPieceSidesTitle": "駒の表と裏",
+  "howToPlayPieceSidesBody": "すべての駒（キング以外）には表と裏があり、動くたびに表裏が入れ替わります。表向きの駒は上下左右に1マスだけ動けます。裏向きの駒は斜めに2マス（間のマスが空いていれば）ジャンプできます。盤面の駒の色だけでなく、表裏の向きも着手の選択肢に影響するので、よく見て動かしましょう。",
+  "howToPlayCaptureTitle": "捕獲（オセロ的な色変え）",
+  "howToPlayCaptureBody": "相手の駒がいるマスへ移動すると、その駒を奪います。ただしチェスのように自分の駒がそのマスへ乗るのではなく、相手の駒そのものが自分の色に変わり、表裏も反転します（移動してきた自分の駒自体は消えます）。石を裏返すオセロの発想を、駒の移動ゲームに組み込んだのがReversiaの特徴です。",
+  "howToPlayKingTitle": "キングと勝敗",
+  "howToPlayKingBody": "両陣営に1枚ずつキングがいます。キングは上下左右斜めの8方向に1マス動け、他の駒と違って表裏はありません。相手のキングがいるマスへ移動すると、キングを奪ってその場に自分の駒が乗り、即座に勝利します。",
+  "howToPlayOtherEndConditionsTitle": "その他の終局条件",
+  "howToPlayOtherEndConditionsBody": "自分の番で動かせる駒が1つも無い場合、その時点で負けになります（チェスのステイルメイトと違い、Reversiaでは引き分けになりません）。同じ局面が繰り返し現れた場合は、その繰り返しを発生させた側の負けです。長引いた対局は手数の上限に達すると、その時点で盤上の駒数が多い側の勝ち（同数なら引き分け）になります。",
+  "howToPlayHandicapAndAiTitle": "ハンディキャップとAIの強さ",
+  "howToPlayHandicapAndAiBody": "対局画面のAppBarから、AIの強さ（初級/中級/上級）とハンディキャップ（後手の駒を何枚か外して先手を有利にする）を選べます。ハンディキャップを変更すると対局は新規に始め直されますが、AIの強さはいつでも変更でき、現在の対局にそのまま反映されます。",
+  "privacyPolicyTitle": "プライバシーポリシー",
+  "termsOfServiceTitle": "利用規約",
+  "privacyPolicyBodyText": "プライバシーポリシー\n最終更新日: {lastUpdated}\n\nKomovia Reversia（以下「本アプリ」）は、以下の方針に基づき利用者情報を取り扱います。\n\n1. 取得する情報\n本アプリはFirebase Authenticationの匿名サインイン機能を利用し、端末ごとに一意の識別子（UID）を発行します。氏名・メールアドレス・電話番号など、利用者を直接特定できる情報の入力は求めません。\n\n2. 情報の利用目的\n取得したUIDは、対局履歴・パズルの進捗・レーティング・通知の送受信・フレンド機能など、本アプリ内のデータをその利用者に紐付けて保存・表示するためにのみ使用します。\n\n3. データの保存先\n対局データ・パズル進捗・通知・ランキング情報はGoogle Cloud Firestoreに保存されます。これらのデータはFirestoreのセキュリティルールにより、原則として本人のみが読み書きできるよう制限されています（対局相手の表示名のように、対局を成立させるために必要な範囲で他の利用者にも参照される情報を除きます）。\n\n4. クラッシュレポート\n本アプリはFirebase Crashlyticsを利用して、アプリの異常終了（クラッシュ）に関する技術的な情報（発生場所・端末のOSバージョンなど）を収集します。これは本アプリの品質改善のみを目的としており、個人を特定する情報は含みません。\n\n5. 第三者への提供\n本アプリは、上記Firebaseの各サービス（Google社が提供）以外の第三者に利用者情報を提供することはありません。\n\n6. データの保持期間\n匿名アカウントおよびそれに紐づくデータは、利用者がアプリをアンインストールしても自動的に削除されるわけではありません。削除をご希望の場合は、下記の連絡先までお問い合わせください。\n\n7. お子様のプライバシー\n本アプリは特定の年齢層を対象としたものではなく、個人を特定する情報を収集しないため、お子様が利用される場合も上記の取り扱いに変わりはありません。\n\n8. 本ポリシーの変更\n本ポリシーは、本アプリの機能追加や法令の変更等に応じて更新されることがあります。重要な変更がある場合は、アプリ内で可能な範囲でお知らせします。\n\n9. お問い合わせ\n本ポリシーに関するお問い合わせは、アプリストアの開発者情報に記載された連絡先までご連絡ください。",
+  "@privacyPolicyBodyText": {
+    "placeholders": {
+      "lastUpdated": {
+        "type": "String"
+      }
+    }
+  },
+  "termsOfServiceBodyText": "利用規約\n最終更新日: {lastUpdated}\n\n本利用規約（以下「本規約」）は、Komovia Reversia（以下「本アプリ」）の利用条件を定めるものです。本アプリをご利用いただくことで、本規約に同意したものとみなします。\n\n1. サービス内容\n本アプリは、6×6の盤面を用いた対戦型ボードゲームをAI対局・対人対局（PvP）・日替わりパズルの形式で提供するものです。\n\n2. アカウント\n本アプリはFirebase Authenticationの匿名サインインを使用し、利用者ごとに識別子を発行します。利用者はこの識別子に関連付けられた対局データ・パズル進捗等の管理について自己責任を負います。\n\n3. 禁止事項\n利用者は、本アプリの利用にあたり、以下の行為を行ってはなりません。\n・不正な手段によるレーティングやランキングの操作\n・他の利用者への嫌がらせ、不適切な内容を含むメッセージの送信\n・本アプリのサーバーやデータベースへの不正アクセス、負荷をかける行為\n・その他、法令または公序良俗に反する行為\n\n4. 利用者が投稿する情報\nフレンドへのメッセージ送信など、利用者が本アプリ内で入力・送信する内容について、利用者自身がその内容の責任を負うものとします。\n\n5. サービスの提供\n本アプリは現状有姿で提供され、常時の稼働や特定の品質を保証するものではありません。開発者は、事前の通知なく本アプリの内容を変更、中断、または終了することがあります。\n\n6. 免責事項\n本アプリの利用により利用者に生じた損害について、開発者は法令上許容される範囲で責任を負いません。\n\n7. 本規約の変更\n本規約は、本アプリの機能追加や法令の変更等に応じて更新されることがあります。重要な変更がある場合は、アプリ内で可能な範囲でお知らせします。\n\n8. お問い合わせ\n本規約に関するお問い合わせは、アプリストアの開発者情報に記載された連絡先までご連絡ください。",
+  "@termsOfServiceBodyText": {
+    "placeholders": {
+      "lastUpdated": {
+        "type": "String"
+      }
+    }
+  },
+  "growthTitle": "成長の記録",
+  "growthLoadFailedMessage": "読み込みに失敗しました: {error}",
+  "@growthLoadFailedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "growthNoRecordsMessage": "まだ対局記録がありません。\nAIと対局すると、ここに成長の記録が表示されます。",
+  "growthCurrentRatingLabel": "現在のレーティング",
+  "growthGamesPlayedLabel": "対局数",
+  "growthWinRateLabel": "勝率",
+  "growthDrawsLabel": "引き分け",
+  "growthCurrentStreakLabel": "現在の連勝",
+  "growthLongestStreakLabel": "最長連勝",
+  "growthEncouragementBeginner": "ここからが始まりです。対局を重ねるごとに、着実に力がついていきます。",
+  "growthEncouragementGoodWinRate": "素晴らしい勝率です！この調子で指し続けましょう。",
+  "growthEncouragementKeepGoing": "{gamesPlayed}局、よく指し続けています。一局ごとの経験が、確かな力になっています。",
+  "@growthEncouragementKeepGoing": {
+    "placeholders": {
+      "gamesPlayed": {
+        "type": "int"
+      }
+    }
+  },
+  "homeResumeTitle": "続きから",
+  "homeResumeSubtitle": "進行中の対局を再開する",
+  "homePlayTitle": "プレイ",
+  "homePlaySubtitle": "AIと対局する",
+  "homeDailyPuzzleSubtitle": "毎日更新されるパズルに挑戦",
+  "homeFindOpponentTitle": "対局相手を探す",
+  "homeFindOpponentSubtitle": "マッチングまたは招待コードで対局する",
+  "homePvpGamesTitle": "対局中のPvP",
+  "homePvpGamesSubtitle": "進行中の対局一覧",
+  "homeGrowthSubtitle": "レーティング・対局数・勝率を振り返る",
+  "homeWeeklyGoalsTitle": "今週の目標",
+  "homeWeeklyGoalsSubtitle": "対局数・勝利数・パズルの週替わり目標",
+  "homeFriendsTitle": "フレンド",
+  "homeFriendsSubtitle": "フレンド申請・管理",
+  "homeLiveFriendsSubtitle": "いま対局中のフレンドを観戦する",
+  "homeTournamentTitle": "トーナメント",
+  "homeTournamentSubtitle": "参加・ブラケットを見る",
+  "homeAchievementsSubtitle": "バッジ・実績の進捗を見る",
+  "homeLeaderboardSubtitle": "レーティング上位プレイヤー",
+  "homeSettingsTitle": "設定",
+  "homeSettingsSubtitle": "利用規約・プライバシーポリシーなど",
+  "paywallTitle": "プレミアムサポーター",
+  "paywallDescription": "Komovia Reversiaの開発を応援してくださる方向けのサポータープランです。現時点でプレミアムでなければ使えない機能はありませんが、ご購入いただくとホーム画面にサポーターバッジが表示されます。",
+  "paywallAlreadySupporterMessage": "すでにサポーターです（{plan}）",
+  "@paywallAlreadySupporterMessage": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "paywallAlreadySupporterWithExpiryMessage": "すでにサポーターです（{plan}） - {expiresAt}まで有効",
+  "@paywallAlreadySupporterWithExpiryMessage": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      },
+      "expiresAt": {
+        "type": "String"
+      }
+    }
+  },
+  "paywallPurchaseThanksMessage": "ご購入ありがとうございます！",
+  "paywallPriceUnavailableMessage": "価格を取得できませんでした",
+  "paywallPriceLoadingMessage": "価格を取得中...",
+  "paywallPurchaseButton": "購入する",
+  "onboardingHowToMoveTitle": "駒の動かし方",
+  "onboardingHowToMoveBody": "表向きの駒は直交に1マス、裏向きの駒は対角に2マスジャンプします。駒をタップすると、動かせるマスがハイライトされます。",
+  "onboardingWinConditionTitle": "勝敗",
+  "onboardingWinConditionBody": "相手の駒がいる場所へ移動すると、その駒を奪って自分の色に変えます（石を裏返す点がオセロ的です）。相手のキングを奪うと即座に勝利します。",
+  "onboardingCaptureDemoTitle": "実際にやってみる",
+  "onboardingCaptureDemoBody": "表向きの駒をタップして、すぐ上の相手の駒を取ってみましょう",
+  "onboardingNextButton": "次へ",
+  "onboardingCapturedMessage": "やった、1枚取れました！",
+  "onboardingCapturedFollowUpMessage": "取った駒は自分の色になります。相手のキングを奪うと勝利です。",
+  "onboardingStartButton": "はじめる",
+  "notificationsTitle": "通知",
+  "notificationSettingsTooltip": "通知設定",
+  "notificationsEmptyMessage": "通知はありません",
+  "notificationAllLabel": "すべての通知",
+  "notificationFriendRequestsLabel": "フレンド申請",
+  "notificationGameInvitationsLabel": "対局の招待",
+  "notificationTournamentLabel": "トーナメント",
+  "notificationAchievementsLabel": "実績解除",
+  "cancelButton": "キャンセル",
+  "saveButton": "保存",
+  "settingsChooseAvatarTitle": "アバターを選ぶ",
+  "settingsNotificationPermissionRequiredMessage": "通知の許可が必要です",
+  "settingsAvatarLabel": "アバター",
+  "settingsDailyReminderLabel": "デイリーリマインダー",
+  "settingsDailyReminderOnSubtitle": "毎日 {time} に通知",
+  "@settingsDailyReminderOnSubtitle": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsOffLabel": "オフ",
+  "settingsOnLabel": "オン",
+  "settingsReminderTimeLabel": "通知時刻",
+  "settingsMoveFeedbackLabel": "着手の効果音・バイブ",
+  "friendsAddTooltip": "フレンドを追加",
+  "friendsPendingTab": "招待待ち",
+  "friendsBlockedTab": "ブロック中",
+  "friendsEmptyMessage": "フレンドはまだいません",
+  "friendsBlockTooltip": "ブロック",
+  "friendsPendingEmptyMessage": "招待待ちの申請はありません",
+  "friendsIncomingRequestLabel": "申請が届いています",
+  "friendsSentRequestLabel": "送信済み - 相手の返答待ち",
+  "friendsAcceptTooltip": "承認する",
+  "friendsRejectTooltip": "拒否する",
+  "friendsBlockedEmptyMessage": "ブロック中のフレンドはいません",
+  "friendsUnblockButton": "ブロック解除",
+  "friendsSearchByDisplayNameLabel": "表示名で検索",
+  "friendsSearchHintMessage": "検索ボックスに表示名を入れて検索してください",
+  "friendsRequestButton": "申請",
+  "friendsSearchButton": "検索",
+  "closeButton": "閉じる",
+  "puzzleFindKingCaptureMessage": "キングを捕獲する一手を探しましょう",
+  "puzzleDifficultyLabel": "難易度: {difficulty}",
+  "@puzzleDifficultyLabel": {
+    "placeholders": {
+      "difficulty": {
+        "type": "String"
+      }
+    }
+  },
+  "puzzleStreakLabel": "{streak}日連続",
+  "@puzzleStreakLabel": {
+    "placeholders": {
+      "streak": {
+        "type": "int"
+      }
+    }
+  },
+  "puzzleTapToSelectMessage": "駒をタップして選び、行き先をタップしてください",
+  "puzzleCorrectMessage": "正解です！",
+  "puzzleIncorrectMessage": "残念、違う手です",
+  "tournamentCreateTooltip": "トーナメントを作成",
+  "tournamentEmptyMessage": "まだトーナメントはありません",
+  "tournamentJoinButton": "参加する",
+  "tournamentNameLabel": "名前",
+  "tournamentFormatLabel": "形式",
+  "tournamentFormatSingleElimination": "シングルエリミネーション",
+  "tournamentFormatRoundRobin": "総当たり戦",
+  "tournamentFormatSwiss": "スイス式",
+  "tournamentCreateButton": "作成",
+  "tournamentStandingsTooltip": "順位表",
+  "tournamentStartButton": "開始する",
+  "tournamentBracketEmptyMessage": "まだブラケットは生成されていません",
+  "tournamentRoundLabel": "{round}回戦",
+  "@tournamentRoundLabel": {
+    "placeholders": {
+      "round": {
+        "type": "int"
+      }
+    }
+  },
+  "tournamentByeLabel": "不戦勝",
+  "tournamentWinnerLabel": "勝者: {name}",
+  "@tournamentWinnerLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tournamentViewGameButton": "対局を見る",
+  "tournamentStartMatchButton": "対局を開始する",
+  "tournamentStandingsEmptyMessage": "まだ試合結果がありません",
+  "tournamentRankLabel": "{rank}位",
+  "@tournamentRankLabel": {
+    "placeholders": {
+      "rank": {
+        "type": "int"
+      }
+    }
+  },
+  "tournamentWinLossLabel": "{wins}勝{losses}敗",
+  "@tournamentWinLossLabel": {
+    "placeholders": {
+      "wins": {
+        "type": "int"
+      },
+      "losses": {
+        "type": "int"
+      }
+    }
+  },
+  "challengeCreateFailedMessage": "対局コードの発行に失敗しました: {error}",
+  "@challengeCreateFailedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeInvalidCodeMessage": "このコードは無効、または既に使用されています",
+  "challengeJoinFailedMessage": "参加に失敗しました: {error}",
+  "@challengeJoinFailedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeTitle": "フレンド対戦",
+  "challengeIntroMessage": "対局コードを発行して相手に伝えるか、相手から伝えられたコードを入力してください。",
+  "challengeCreateSectionTitle": "対局コードを発行する",
+  "challengeCreateButton": "コードを発行する",
+  "challengeJoinSectionTitle": "コードで参加する",
+  "challengeCodeLabel": "対局コード",
+  "challengeJoinButton": "参加する",
+  "challengeShareCodeMessage": "このコードを相手に伝えてください",
+  "challengeWaitingMessage": "対局相手を待っています…",
+  "challengeAutoStartMessage": "相手が参加すると自動的に対局が始まります",
+  "matchingIntroMessage": "対局相手を探してマッチングします。",
+  "matchingFindOpponentButton": "対局相手を探す",
+  "matchingChallengeFriendButton": "特定の相手と対戦する（招待コード）",
+  "matchingHistoryTitle": "対局履歴",
+  "matchingFoundMessage": "対局相手が見つかりました",
+  "matchingHistoryEmptyMessage": "対局履歴はまだありません",
+  "matchingNotFoundMessage": "相手が見つかりませんでした。しばらくしてからもう一度お試しください",
+  "matchingStartGameFailedMessage": "対局の開始に失敗しました: {error}",
+  "@matchingStartGameFailedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pvpGamesListEmptyMessage": "進行中のPvP対局はありません",
+  "pvpGamesListOpponentLabel": "vs {opponentName}",
+  "@pvpGamesListOpponentLabel": {
+    "placeholders": {
+      "opponentName": {
+        "type": "String"
+      }
+    }
+  },
+  "pvpGamesListMovesCountLabel": "{count}手",
+  "@pvpGamesListMovesCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pvpGamesListOpponentInactiveMessage": "相手が長時間応答していません",
+  "pvpGamesListYourTurnLabel": "あなたの番",
+  "pvpGamesListOpponentTurnLabel": "相手の番",
+  "pvpGamesListClaimForfeitButton": "放置勝ちを申請する",
+  "pvpGamesListClaimForfeitDialogTitle": "放置勝ちを申請しますか？",
+  "pvpGamesListClaimForfeitDialogMessage": "相手が長時間応答していません。申請すると、あなたの勝ちとして対局が終了します。",
+  "pvpGamesListClaimForfeitConfirmButton": "申請する",
+  "gameReviewMoveNoteDialogTitle": "{moveNumber}手目のメモ",
+  "@gameReviewMoveNoteDialogTitle": {
+    "placeholders": {
+      "moveNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "gameReviewNoteLabel": "メモ",
+  "deleteButton": "削除",
+  "gameReviewTitle": "対局の振り返り",
+  "gameReviewSummaryTitle": "総評",
+  "gameReviewNoMovesMessage": "振り返る着手がありませんでした。",
+  "gameReviewLossVsBestLabel": "最善手との差: {loss}点",
+  "@gameReviewLossVsBestLabel": {
+    "placeholders": {
+      "loss": {
+        "type": "int"
+      }
+    }
+  },
+  "gameReviewBestMoveLabel": "最善手: {move}",
+  "@gameReviewBestMoveLabel": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      }
+    }
+  },
+  "gameReviewPhaseBreakdownTitle": "局面別の傾向",
+  "gameReviewNoMovesInPhaseMessage": "着手なし",
+  "gameReviewPhaseStatsLabel": "平均{averageLoss}点 / 悪手{mistakeCount}手",
+  "@gameReviewPhaseStatsLabel": {
+    "placeholders": {
+      "averageLoss": {
+        "type": "String"
+      },
+      "mistakeCount": {
+        "type": "int"
+      }
+    }
+  },
+  "pvpGameIllegalMoveMessage": "その手は指せません",
+  "pvpGameResignDialogTitle": "投了しますか？",
+  "pvpGameResignDialogMessage": "投了すると対局が終了します。",
+  "pvpGameResignConfirmButton": "投了する",
+  "pvpGameFinishedMessage": "対局が終了しました",
+  "pvpGameWonByForfeitMessage": "相手の放置により、あなたの勝ちです",
+  "pvpGameLostByForfeitMessage": "放置により、あなたの負けです",
+  "pvpGameSpectatingStatus": "観戦中",
+  "pvpGameTitle": "対局",
+  "pvpGameLoginRequiredMessage": "ログインが必要です",
+  "pvpGameResignButton": "投了する"
+}

@@ -9,6 +9,7 @@ import 'package:komovia_reversia/services/reversia_pvp_game_service.dart';
 import 'package:komovia_reversia/viewmodels/auth_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_pvp_game_provider.dart';
 import 'package:komovia_reversia/views/screens/reversia_pvp_game_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 void main() {
   Future<String> seedGame(ReversiaPvpGameService service) async {
@@ -33,7 +34,10 @@ void main() {
           reversiaPvpGameServiceProvider.overrideWithValue(service),
           currentUidProvider.overrideWithValue(uid),
         ],
-        child: MaterialApp(home: ReversiaPvpGameScreen(gameId: gameId)),
+        child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ReversiaPvpGameScreen(gameId: gameId)),
       ),
     );
     await tester.pump();
@@ -177,7 +181,10 @@ void main() {
           reversiaPvpGameServiceProvider.overrideWithValue(service),
           currentUidProvider.overrideWithValue(null),
         ],
-        child: MaterialApp(home: ReversiaPvpGameScreen(gameId: gameId)),
+        child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ReversiaPvpGameScreen(gameId: gameId)),
       ),
     );
     await tester.pump();

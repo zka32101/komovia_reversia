@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../viewmodels/index.dart';
 import 'tournament_bracket_screen.dart';
 
@@ -14,16 +15,17 @@ class TournamentScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final tournaments = ref.watch(tournamentsStreamProvider).value ?? [];
     return Scaffold(
-      appBar: AppBar(title: const Text('トーナメント')),
+      appBar: AppBar(title: Text(l10n.homeTournamentTitle)),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCreateDialog(context, ref),
-        tooltip: 'トーナメントを作成',
+        tooltip: l10n.tournamentCreateTooltip,
         child: const Icon(Icons.add),
       ),
       body: tournaments.isEmpty
-          ? const Center(child: Text('まだトーナメントはありません'))
+          ? Center(child: Text(l10n.tournamentEmptyMessage))
           : ListView(
               children: tournaments.map((t) {
                 final joined = t.participantUids.contains(uid);
@@ -36,7 +38,7 @@ class TournamentScreen extends ConsumerWidget {
                       ? TextButton(
                           onPressed: () =>
                               ref.read(joinTournamentProvider)(t.id, uid),
-                          child: const Text('参加する'),
+                          child: Text(l10n.tournamentJoinButton),
                         )
                       : null,
                   onTap: () => Navigator.push(
@@ -56,34 +58,38 @@ class TournamentScreen extends ConsumerWidget {
   }
 
   void _showCreateDialog(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController();
     var format = 'single_elimination';
     showDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          title: const Text('トーナメントを作成'),
+          title: Text(l10n.tournamentCreateTooltip),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: '名前'),
+                decoration: InputDecoration(labelText: l10n.tournamentNameLabel),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: format,
-                decoration: const InputDecoration(labelText: '形式'),
-                items: const [
+                decoration: InputDecoration(labelText: l10n.tournamentFormatLabel),
+                items: [
                   DropdownMenuItem(
                     value: 'single_elimination',
-                    child: Text('シングルエリミネーション'),
+                    child: Text(l10n.tournamentFormatSingleElimination),
                   ),
                   DropdownMenuItem(
                     value: 'round_robin',
-                    child: Text('総当たり戦'),
+                    child: Text(l10n.tournamentFormatRoundRobin),
                   ),
-                  DropdownMenuItem(value: 'swiss', child: Text('スイス式')),
+                  DropdownMenuItem(
+                    value: 'swiss',
+                    child: Text(l10n.tournamentFormatSwiss),
+                  ),
                 ],
                 onChanged: (v) => setState(() => format = v ?? format),
               ),
@@ -92,7 +98,7 @@ class TournamentScreen extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('キャンセル'),
+              child: Text(l10n.cancelButton),
             ),
             TextButton(
               onPressed: () {
@@ -110,7 +116,7 @@ class TournamentScreen extends ConsumerWidget {
                 }
                 Navigator.pop(ctx);
               },
-              child: const Text('作成'),
+              child: Text(l10n.tournamentCreateButton),
             ),
           ],
         ),

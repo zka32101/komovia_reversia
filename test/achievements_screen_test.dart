@@ -7,6 +7,7 @@ import 'package:komovia_reversia/services/leaderboard_service.dart';
 import 'package:komovia_reversia/viewmodels/achievement_provider.dart';
 import 'package:komovia_reversia/viewmodels/leaderboard_provider.dart';
 import 'package:komovia_reversia/views/screens/achievements_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 void main() {
   Future<AchievementService> pumpScreen(
@@ -22,7 +23,10 @@ void main() {
           leaderboardServiceProvider.overrideWithValue(leaderboard),
           achievementServiceProvider.overrideWithValue(service),
         ],
-        child: MaterialApp(home: AchievementsScreen(uid: uid)),
+        child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AchievementsScreen(uid: uid)),
       ),
     );
     await tester.pump();
@@ -57,7 +61,10 @@ void main() {
           leaderboardServiceProvider.overrideWithValue(leaderboard),
           achievementServiceProvider.overrideWithValue(service),
         ],
-        child: const MaterialApp(home: AchievementsScreen(uid: 'u1')),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AchievementsScreen(uid: 'u1')),
       ),
     );
     await tester.pump();

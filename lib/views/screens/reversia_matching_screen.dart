@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/reversia_matching.dart';
 import '../../viewmodels/index.dart';
 import 'reversia_challenge_screen.dart';
@@ -37,13 +38,14 @@ class _ReversiaMatchingScreenState extends ConsumerState<ReversiaMatchingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('対局相手を探す'),
+        title: Text(l10n.homeFindOpponentTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.list_alt),
-            tooltip: '対局中のPvP',
+            tooltip: l10n.homePvpGamesTitle,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => ReversiaPvpGamesListScreen(uid: widget.uid),
@@ -57,9 +59,9 @@ class _ReversiaMatchingScreenState extends ConsumerState<ReversiaMatchingScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('対局相手を探してマッチングします。'),
+            Text(l10n.matchingIntroMessage),
             const SizedBox(height: 20),
-            if (_foundMatch != null) _buildMatchFoundCard(_foundMatch!),
+            if (_foundMatch != null) _buildMatchFoundCard(_foundMatch!, l10n),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -78,7 +80,7 @@ class _ReversiaMatchingScreenState extends ConsumerState<ReversiaMatchingScreen>
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('対局相手を探す'),
+                    : Text(l10n.matchingFindOpponentButton),
               ),
             ),
             const SizedBox(height: 20),
@@ -93,26 +95,26 @@ class _ReversiaMatchingScreenState extends ConsumerState<ReversiaMatchingScreen>
                     ),
                   ),
                 ),
-                child: const Text('特定の相手と対戦する（招待コード）'),
+                child: Text(l10n.matchingChallengeFriendButton),
               ),
             ),
             const SizedBox(height: 32),
             Text(
-              '対局履歴',
+              l10n.matchingHistoryTitle,
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            _buildMatchHistory(),
+            _buildMatchHistory(l10n),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMatchFoundCard(ReversiaMatchResult match) {
+  Widget _buildMatchFoundCard(ReversiaMatchResult match, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -127,7 +129,7 @@ class _ReversiaMatchingScreenState extends ConsumerState<ReversiaMatchingScreen>
             children: [
               const Icon(Icons.handshake),
               const SizedBox(width: 8),
-              const Text('対局相手が見つかりました', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(l10n.matchingFoundMessage, style: const TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 12),
@@ -144,7 +146,7 @@ class _ReversiaMatchingScreenState extends ConsumerState<ReversiaMatchingScreen>
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('対局を開始する'),
+                    : Text(l10n.tournamentStartMatchButton),
               ),
             ),
           ],
@@ -153,12 +155,12 @@ class _ReversiaMatchingScreenState extends ConsumerState<ReversiaMatchingScreen>
     );
   }
 
-  Widget _buildMatchHistory() {
+  Widget _buildMatchHistory(AppLocalizations l10n) {
     final historyAsync = ref.watch(reversiaMatchHistoryProvider(widget.uid));
     return historyAsync.when(
       data: (matches) {
         if (matches.isEmpty) {
-          return const Text('対局履歴はまだありません');
+          return Text(l10n.matchingHistoryEmptyMessage);
         }
         return Column(
           children: matches.map((match) {
@@ -188,7 +190,7 @@ class _ReversiaMatchingScreenState extends ConsumerState<ReversiaMatchingScreen>
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, _) => Text(
-        'エラー: $err',
+        l10n.commonErrorMessage(err.toString()),
         style: TextStyle(color: Theme.of(context).colorScheme.error),
       ),
     );
@@ -213,16 +215,19 @@ class _ReversiaMatchingScreenState extends ConsumerState<ReversiaMatchingScreen>
       );
 
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
         _foundMatch = match;
-        _error = match == null ? '相手が見つかりませんでした。しばらくしてからもう一度お試しください' : null;
+        _error = match == null ? l10n.matchingNotFoundMessage : null;
       });
 
       if (match != null) {
         ref.invalidate(reversiaMatchHistoryProvider(widget.uid));
       }
     } catch (e) {
-      if (mounted) setState(() => _error = 'エラー: $e');
+      if (mounted) {
+        setState(() => _error = AppLocalizations.of(context)!.commonErrorMessage(e.toString()));
+      }
     } finally {
       if (mounted) setState(() => _isSearching = false);
     }
@@ -267,7 +272,11 @@ class _ReversiaMatchingScreenState extends ConsumerState<ReversiaMatchingScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('対局の開始に失敗しました: $e')),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.matchingStartGameFailedMessage(e.toString()),
+            ),
+          ),
         );
       }
     } finally {

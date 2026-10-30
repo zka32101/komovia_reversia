@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/reversia_weekly_progress.dart';
 import '../../viewmodels/index.dart';
 
@@ -13,13 +14,15 @@ class ReversiaWeeklyGoalsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final progressAsync = ref.watch(myReversiaWeeklyProgressProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('今週の目標')),
+      appBar: AppBar(title: Text(l10n.homeWeeklyGoalsTitle)),
       body: progressAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('読み込みに失敗しました: $error')),
+        error: (error, stack) =>
+            Center(child: Text(l10n.growthLoadFailedMessage(error.toString()))),
         data: (progress) {
           final p = progress ?? ReversiaWeeklyProgress.initial;
           return ListView(

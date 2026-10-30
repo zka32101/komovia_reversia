@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/komovia_reversia.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../utils/reversia_move_feedback.dart';
 import '../../viewmodels/index.dart';
 
@@ -115,10 +116,11 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final difficulty = _puzzle.metadata['difficultyLabel'] as String?;
     final uid = ref.watch(currentUidProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('今日の1局')),
+      appBar: AppBar(title: Text(l10n.dailyPuzzleTooltip)),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -127,7 +129,9 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
             children: [
               if (uid != null) _StreakChip(uid: uid),
               Text(
-                difficulty == null ? 'キングを捕獲する一手を探しましょう' : '難易度: $difficulty',
+                difficulty == null
+                    ? l10n.puzzleFindKingCaptureMessage
+                    : l10n.puzzleDifficultyLabel(difficulty),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -169,7 +173,7 @@ class _PuzzleScreenState extends ConsumerState<PuzzleScreen> {
                   padding: const EdgeInsets.only(top: 8),
                   child: FilledButton(
                     onPressed: _reset,
-                    child: const Text('もう一度'),
+                    child: Text(l10n.playAgainButton),
                   ),
                 ),
             ],
@@ -193,7 +197,7 @@ class _StreakChip extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Chip(
         avatar: const Icon(Icons.local_fire_department, size: 18),
-        label: Text('$streak日連続'),
+        label: Text(AppLocalizations.of(context)!.puzzleStreakLabel(streak)),
       ),
     );
   }
@@ -206,12 +210,13 @@ class _OutcomeBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     switch (outcome) {
       case _PuzzleOutcome.none:
-        return const Text('駒をタップして選び、行き先をタップしてください');
+        return Text(l10n.puzzleTapToSelectMessage);
       case _PuzzleOutcome.correct:
         return Text(
-          '正解です！',
+          l10n.puzzleCorrectMessage,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.primary,
@@ -219,7 +224,7 @@ class _OutcomeBanner extends StatelessWidget {
         );
       case _PuzzleOutcome.incorrect:
         return Text(
-          '残念、違う手です',
+          l10n.puzzleIncorrectMessage,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.error,

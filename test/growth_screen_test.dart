@@ -5,6 +5,7 @@ import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/models/reversia_game_stats.dart';
 import 'package:komovia_reversia/viewmodels/index.dart';
 import 'package:komovia_reversia/views/screens/growth_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 void main() {
   testWidgets('shows an empty-state message when no games have been played', (
@@ -18,7 +19,10 @@ void main() {
             (ref) => Stream.value(ReversiaGameStats.initial),
           ),
         ],
-        child: const MaterialApp(home: GrowthScreen()),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: GrowthScreen()),
       ),
     );
     await tester.pump();
@@ -49,7 +53,10 @@ void main() {
             (ref) => Stream.value(ReversiaGameStats.initial),
           ),
         ],
-        child: const MaterialApp(home: GrowthScreen()),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: GrowthScreen()),
       ),
     );
     await tester.pump();
@@ -80,7 +87,10 @@ void main() {
             (ref) => Stream.value(ReversiaGameStats.initial),
           ),
         ],
-        child: const MaterialApp(home: GrowthScreen()),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: GrowthScreen()),
       ),
     );
     await tester.pump();
@@ -111,7 +121,10 @@ void main() {
             (ref) => Stream.value(ReversiaGameStats.initial),
           ),
         ],
-        child: const MaterialApp(home: GrowthScreen()),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: GrowthScreen()),
       ),
     );
     await tester.pump();
@@ -149,7 +162,10 @@ void main() {
           myLeaderboardEntryProvider.overrideWith((ref) => Future.value(entry)),
           myReversiaGameStatsProvider.overrideWith((ref) => Stream.value(stats)),
         ],
-        child: const MaterialApp(home: GrowthScreen()),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: GrowthScreen()),
       ),
     );
     await tester.pump();
@@ -185,7 +201,10 @@ void main() {
             (ref) => Stream.value(ReversiaGameStats.initial),
           ),
         ],
-        child: const MaterialApp(home: GrowthScreen()),
+        child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: GrowthScreen()),
       ),
     );
     await tester.pump();

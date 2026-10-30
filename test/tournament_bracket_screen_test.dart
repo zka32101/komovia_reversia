@@ -9,6 +9,7 @@ import 'package:komovia_reversia/viewmodels/reversia_pvp_game_provider.dart';
 import 'package:komovia_reversia/viewmodels/tournament_provider.dart';
 import 'package:komovia_reversia/views/screens/reversia_pvp_game_screen.dart';
 import 'package:komovia_reversia/views/screens/tournament_bracket_screen.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 void main() {
   Future<void> pumpBracket(
@@ -28,7 +29,9 @@ void main() {
             reversiaPvpGameServiceProvider.overrideWithValue(pvpService),
         ],
         child: MaterialApp(
-          home: TournamentBracketScreen(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: TournamentBracketScreen(
             tournamentId: tournamentId,
             uid: uid,
             displayName: displayName,

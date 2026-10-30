@@ -11,6 +11,7 @@ import 'package:komovia_reversia/services/reversia_difficulty_stats_service.dart
 import 'package:komovia_reversia/viewmodels/auth_provider.dart';
 import 'package:komovia_reversia/viewmodels/reversia_difficulty_stats_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:komovia_reversia/l10n/app_localizations.dart';
 
 /// Smoke test for the app shell added in this PR: the real
 /// `ReversiaGame`/`ReversiaEngine`/`ReversiaBoardRenderer` stack, driven
@@ -273,7 +274,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [currentUidProvider.overrideWithValue(null)],
-          child: MaterialApp(home: ReversiaGameScreen(resume: true)),
+          child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ReversiaGameScreen(resume: true)),
         ),
       );
       await tester.pump();
@@ -296,7 +300,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [currentUidProvider.overrideWithValue(null)],
-          child: MaterialApp(home: ReversiaGameScreen(resume: true)),
+          child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ReversiaGameScreen(resume: true)),
         ),
       );
       await tester.pump();
