@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/reversia_pvp_game.dart';
 import '../../services/reversia_pvp_game_service.dart';
 import '../../viewmodels/index.dart';
@@ -18,10 +19,11 @@ class ReversiaPvpGamesListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final gamesAsync = ref.watch(reversiaUserActivePvpGamesProvider(uid));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('対局中のPvP')),
+      appBar: AppBar(title: Text(l10n.homePvpGamesTitle)),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(reversiaUserActivePvpGamesProvider(uid));
@@ -34,7 +36,7 @@ class ReversiaPvpGamesListScreen extends ConsumerWidget {
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: [
                   SizedBox(height: MediaQuery.of(context).size.height * 0.3),
-                  const Center(child: Text('進行中のPvP対局はありません')),
+                  Center(child: Text(l10n.pvpGamesListEmptyMessage)),
                 ],
               );
             }
@@ -53,7 +55,7 @@ class ReversiaPvpGamesListScreen extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  'エラー: $err',
+                  l10n.commonErrorMessage(err.toString()),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
@@ -73,6 +75,7 @@ class _GameCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final isFirst = game.playerColorOf(uid) == 1;
     final opponentName = isFirst ? game.secondDisplayName : game.firstDisplayName;
     final myTurn = game.isTurnOf(uid);
@@ -92,10 +95,10 @@ class _GameCard extends ConsumerWidget {
                   : null,
               child: const Icon(Icons.person),
             ),
-            title: Text('vs $opponentName'),
+            title: Text(l10n.pvpGamesListOpponentLabel(opponentName)),
             subtitle: Text(
-              '${game.movesCount}手'
-              '${canClaimForfeit ? '\n相手が長時間応答していません' : ''}',
+              '${l10n.pvpGamesListMovesCountLabel(game.movesCount)}'
+              '${canClaimForfeit ? '\n${l10n.pvpGamesListOpponentInactiveMessage}' : ''}',
               style: canClaimForfeit
                   ? TextStyle(color: Theme.of(context).colorScheme.error)
                   : null,
@@ -109,9 +112,9 @@ class _GameCard extends ConsumerWidget {
                       color: Theme.of(context).colorScheme.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text('あなたの番'),
+                    child: Text(l10n.pvpGamesListYourTurnLabel),
                   )
-                : const Text('相手の番'),
+                : Text(l10n.pvpGamesListOpponentTurnLabel),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => ReversiaPvpGameScreen(gameId: game.id),
@@ -125,7 +128,7 @@ class _GameCard extends ConsumerWidget {
                 alignment: Alignment.centerRight,
                 child: OutlinedButton(
                   onPressed: () => _confirmClaimForfeit(context, ref),
-                  child: const Text('放置勝ちを申請する'),
+                  child: Text(l10n.pvpGamesListClaimForfeitButton),
                 ),
               ),
             ),
@@ -135,19 +138,20 @@ class _GameCard extends ConsumerWidget {
   }
 
   Future<void> _confirmClaimForfeit(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('放置勝ちを申請しますか？'),
-        content: const Text('相手が長時間応答していません。申請すると、あなたの勝ちとして対局が終了します。'),
+        title: Text(l10n.pvpGamesListClaimForfeitDialogTitle),
+        content: Text(l10n.pvpGamesListClaimForfeitDialogMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('キャンセル'),
+            child: Text(l10n.cancelButton),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('申請する'),
+            child: Text(l10n.pvpGamesListClaimForfeitConfirmButton),
           ),
         ],
       ),

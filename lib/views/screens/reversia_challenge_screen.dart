@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/reversia_challenge_code.dart';
 import '../../viewmodels/index.dart';
 import 'reversia_pvp_game_screen.dart';
@@ -61,7 +62,10 @@ class _ReversiaChallengeScreenState extends ConsumerState<ReversiaChallengeScree
         _isHost = true;
       });
     } catch (e) {
-      if (mounted) setState(() => _error = '対局コードの発行に失敗しました: $e');
+      if (mounted) {
+        setState(() => _error =
+            AppLocalizations.of(context)!.challengeCreateFailedMessage(e.toString()));
+      }
     } finally {
       if (mounted) setState(() => _isCreating = false);
     }
@@ -82,7 +86,8 @@ class _ReversiaChallengeScreenState extends ConsumerState<ReversiaChallengeScree
       );
       if (!mounted) return;
       if (challenge == null) {
-        setState(() => _error = 'このコードは無効、または既に使用されています');
+        setState(
+            () => _error = AppLocalizations.of(context)!.challengeInvalidCodeMessage);
       } else {
         setState(() {
           _activeCode = challenge.code;
@@ -90,7 +95,10 @@ class _ReversiaChallengeScreenState extends ConsumerState<ReversiaChallengeScree
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _error = '参加に失敗しました: $e');
+      if (mounted) {
+        setState(() => _error =
+            AppLocalizations.of(context)!.challengeJoinFailedMessage(e.toString()));
+      }
     } finally {
       if (mounted) setState(() => _isJoining = false);
     }
@@ -138,6 +146,7 @@ class _ReversiaChallengeScreenState extends ConsumerState<ReversiaChallengeScree
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final code = _activeCode;
     if (code != null) {
       ref.listen(reversiaChallengeStreamProvider(code), (previous, next) {
@@ -155,7 +164,7 @@ class _ReversiaChallengeScreenState extends ConsumerState<ReversiaChallengeScree
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('フレンド対戦')),
+      appBar: AppBar(title: Text(l10n.challengeTitle)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -169,12 +178,12 @@ class _ReversiaChallengeScreenState extends ConsumerState<ReversiaChallengeScree
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
-            if (code != null) _buildWaitingCard(code),
+            if (code != null) _buildWaitingCard(code, l10n),
             if (code == null) ...[
-              const Text('対局コードを発行して相手に伝えるか、相手から伝えられたコードを入力してください。'),
+              Text(l10n.challengeIntroMessage),
               const SizedBox(height: 20),
               Text(
-                '対局コードを発行する',
+                l10n.challengeCreateSectionTitle,
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
@@ -191,12 +200,12 @@ class _ReversiaChallengeScreenState extends ConsumerState<ReversiaChallengeScree
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('コードを発行する'),
+                      : Text(l10n.challengeCreateButton),
                 ),
               ),
               const SizedBox(height: 32),
               Text(
-                'コードで参加する',
+                l10n.challengeJoinSectionTitle,
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
@@ -206,9 +215,9 @@ class _ReversiaChallengeScreenState extends ConsumerState<ReversiaChallengeScree
               TextField(
                 controller: _codeController,
                 textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(
-                  labelText: '対局コード',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.challengeCodeLabel,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
@@ -222,7 +231,7 @@ class _ReversiaChallengeScreenState extends ConsumerState<ReversiaChallengeScree
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('参加する'),
+                      : Text(l10n.challengeJoinButton),
                 ),
               ),
             ],
@@ -232,7 +241,7 @@ class _ReversiaChallengeScreenState extends ConsumerState<ReversiaChallengeScree
     );
   }
 
-  Widget _buildWaitingCard(String code) {
+  Widget _buildWaitingCard(String code, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -242,7 +251,7 @@ class _ReversiaChallengeScreenState extends ConsumerState<ReversiaChallengeScree
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_isHost ? 'このコードを相手に伝えてください' : '対局相手を待っています…'),
+          Text(_isHost ? l10n.challengeShareCodeMessage : l10n.challengeWaitingMessage),
           const SizedBox(height: 12),
           Text(
             code,
@@ -252,15 +261,15 @@ class _ReversiaChallengeScreenState extends ConsumerState<ReversiaChallengeScree
                 ),
           ),
           const SizedBox(height: 12),
-          const Row(
+          Row(
             children: [
-              SizedBox(
+              const SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
-              SizedBox(width: 8),
-              Text('相手が参加すると自動的に対局が始まります'),
+              const SizedBox(width: 8),
+              Text(l10n.challengeAutoStartMessage),
             ],
           ),
         ],

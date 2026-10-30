@@ -295,5 +295,71 @@
         "type": "int"
       }
     }
-  }
+  },
+  "challengeCreateFailedMessage": "対局コードの発行に失敗しました: {error}",
+  "@challengeCreateFailedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeInvalidCodeMessage": "このコードは無効、または既に使用されています",
+  "challengeJoinFailedMessage": "参加に失敗しました: {error}",
+  "@challengeJoinFailedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeTitle": "フレンド対戦",
+  "challengeIntroMessage": "対局コードを発行して相手に伝えるか、相手から伝えられたコードを入力してください。",
+  "challengeCreateSectionTitle": "対局コードを発行する",
+  "challengeCreateButton": "コードを発行する",
+  "challengeJoinSectionTitle": "コードで参加する",
+  "challengeCodeLabel": "対局コード",
+  "challengeJoinButton": "参加する",
+  "challengeShareCodeMessage": "このコードを相手に伝えてください",
+  "challengeWaitingMessage": "対局相手を待っています…",
+  "challengeAutoStartMessage": "相手が参加すると自動的に対局が始まります",
+  "matchingIntroMessage": "対局相手を探してマッチングします。",
+  "matchingFindOpponentButton": "対局相手を探す",
+  "matchingChallengeFriendButton": "特定の相手と対戦する（招待コード）",
+  "matchingHistoryTitle": "対局履歴",
+  "matchingFoundMessage": "対局相手が見つかりました",
+  "matchingHistoryEmptyMessage": "対局履歴はまだありません",
+  "matchingNotFoundMessage": "相手が見つかりませんでした。しばらくしてからもう一度お試しください",
+  "matchingStartGameFailedMessage": "対局の開始に失敗しました: {error}",
+  "@matchingStartGameFailedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pvpGamesListEmptyMessage": "進行中のPvP対局はありません",
+  "pvpGamesListOpponentLabel": "vs {opponentName}",
+  "@pvpGamesListOpponentLabel": {
+    "placeholders": {
+      "opponentName": {
+        "type": "String"
+      }
+    }
+  },
+  "pvpGamesListMovesCountLabel": "{count}手",
+  "@pvpGamesListMovesCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pvpGamesListOpponentInactiveMessage": "相手が長時間応答していません",
+  "pvpGamesListYourTurnLabel": "あなたの番",
+  "pvpGamesListOpponentTurnLabel": "相手の番",
+  "pvpGamesListClaimForfeitButton": "放置勝ちを申請する",
+  "pvpGamesListClaimForfeitDialogTitle": "放置勝ちを申請しますか？",
+  "pvpGamesListClaimForfeitDialogMessage": "相手が長時間応答していません。申請すると、あなたの勝ちとして対局が終了します。",
+  "pvpGamesListClaimForfeitConfirmButton": "申請する"
 }
