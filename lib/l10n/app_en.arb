@@ -355,13 +355,19 @@
       }
     }
   },
-  "pvpGamesListOpponentInactiveMessage": "相手が長時間応答していません",
+  "pvpGamesListOpponentInactiveMessage": "相手が15分以上応答していません",
   "pvpGamesListYourTurnLabel": "あなたの番",
   "pvpGamesListOpponentTurnLabel": "相手の番",
   "pvpGamesListClaimForfeitButton": "放置勝ちを申請する",
   "pvpGamesListClaimForfeitDialogTitle": "放置勝ちを申請しますか？",
-  "pvpGamesListClaimForfeitDialogMessage": "相手が長時間応答していません。申請すると、あなたの勝ちとして対局が終了します。",
+  "pvpGamesListClaimForfeitDialogMessage": "相手が15分以上応答していません。申請すると、あなたの勝ちとして対局が終了します。",
   "pvpGamesListClaimForfeitConfirmButton": "申請する",
+  "pvpGameForfeitAvailableInMessage": "相手の応答がないまま、あと{minutes}分で放置勝ちを申請できます",
+  "@pvpGameForfeitAvailableInMessage": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
   "gameReviewMoveNoteDialogTitle": "{moveNumber}手目のメモ",
   "@gameReviewMoveNoteDialogTitle": {
     "placeholders": {

@@ -1,6 +1,8 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:komovia_core/komovia_core.dart';
 import 'package:komovia_reversia/models/reversia_pvp_game.dart';
+import 'package:komovia_reversia/services/reversia_pvp_game_service.dart';
 
 void main() {
   group('ReversiaPvpGame', () {
@@ -102,7 +104,7 @@ void main() {
       );
 
       expect(
-        game.canClaimAbandonmentForfeit('first-uid', threshold: const Duration(hours: 48)),
+        game.canClaimAbandonmentForfeit('first-uid', policy: const AbandonmentForfeitPolicy(threshold: Duration(hours: 48))),
         isTrue,
       );
     });
@@ -115,7 +117,7 @@ void main() {
       );
 
       expect(
-        game.canClaimAbandonmentForfeit('first-uid', threshold: const Duration(hours: 48)),
+        game.canClaimAbandonmentForfeit('first-uid', policy: const AbandonmentForfeitPolicy(threshold: Duration(hours: 48))),
         isFalse,
       );
     });
@@ -128,7 +130,7 @@ void main() {
       );
 
       expect(
-        game.canClaimAbandonmentForfeit('second-uid', threshold: const Duration(hours: 48)),
+        game.canClaimAbandonmentForfeit('second-uid', policy: const AbandonmentForfeitPolicy(threshold: Duration(hours: 48))),
         isFalse,
       );
     });
@@ -140,7 +142,7 @@ void main() {
       );
 
       expect(
-        game.canClaimAbandonmentForfeit('nobody', threshold: const Duration(hours: 48)),
+        game.canClaimAbandonmentForfeit('nobody', policy: const AbandonmentForfeitPolicy(threshold: Duration(hours: 48))),
         isFalse,
       );
     });
@@ -153,7 +155,7 @@ void main() {
       );
 
       expect(
-        game.canClaimAbandonmentForfeit('first-uid', threshold: const Duration(hours: 48)),
+        game.canClaimAbandonmentForfeit('first-uid', policy: const AbandonmentForfeitPolicy(threshold: Duration(hours: 48))),
         isFalse,
       );
     });
@@ -166,7 +168,7 @@ void main() {
       );
 
       expect(
-        game.canClaimAbandonmentForfeit('first-uid', threshold: const Duration(hours: 48)),
+        game.canClaimAbandonmentForfeit('first-uid', policy: const AbandonmentForfeitPolicy(threshold: Duration(hours: 48))),
         isTrue,
       );
     });
@@ -223,6 +225,66 @@ void main() {
       expect(game.winnerUid, isNull);
       expect(game.result, isNull);
       expect(game.matchId, isNull);
+    });
+  });
+
+  group('fast-format abandonment policy (15 minutes)', () {
+    const policy = ReversiaPvpGameService.abandonmentPolicy;
+    final now = DateTime.utc(2026, 10, 31, 12);
+
+    ReversiaPvpGame waitingGame(Duration staleness) => ReversiaPvpGame(
+          id: 'g1',
+          firstUid: 'first-uid',
+          firstDisplayName: 'Alice',
+          secondUid: 'second-uid',
+          secondDisplayName: 'Bob',
+          isFirstTurn: false, // second-uid's turn; first-uid is waiting
+          movesCount: 1,
+          status: 'active',
+          createdAt: now.subtract(const Duration(hours: 1)),
+          updatedAt: now.subtract(staleness),
+        );
+
+    test('uses a minutes-scale threshold, not the 48h slow default', () {
+      expect(policy.threshold, const Duration(minutes: 15));
+      expect(policy.threshold, lessThan(AbandonmentForfeitPolicy.slow.threshold));
+    });
+
+    test('not claimable at 14 minutes, claimable at 15', () {
+      expect(
+        waitingGame(const Duration(minutes: 14))
+            .canClaimAbandonmentForfeit('first-uid', policy: policy, now: now),
+        isFalse,
+      );
+      expect(
+        waitingGame(const Duration(minutes: 15))
+            .canClaimAbandonmentForfeit('first-uid', policy: policy, now: now),
+        isTrue,
+      );
+    });
+
+    test('the player whose turn it is can never claim', () {
+      expect(
+        waitingGame(const Duration(hours: 3))
+            .canClaimAbandonmentForfeit('second-uid', policy: policy, now: now),
+        isFalse,
+      );
+    });
+
+    test('remaining time counts down for the waiting player only', () {
+      final game = waitingGame(const Duration(minutes: 5));
+      expect(
+        game.abandonmentForfeitRemaining('first-uid', policy: policy, now: now),
+        const Duration(minutes: 10),
+      );
+      expect(
+        game.abandonmentForfeitRemaining('second-uid', policy: policy, now: now),
+        isNull,
+      );
+      expect(
+        game.abandonmentForfeitRemaining('nobody', policy: policy, now: now),
+        isNull,
+      );
     });
   });
 }

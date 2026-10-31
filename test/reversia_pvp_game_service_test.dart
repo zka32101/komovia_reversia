@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:komovia_core/komovia_core.dart';
@@ -259,7 +260,7 @@ void main() {
       await backdateUpdatedAt(
         firestore,
         game.id,
-        ReversiaPvpGameService.abandonmentThreshold + const Duration(hours: 1),
+        ReversiaPvpGameService.abandonmentPolicy.threshold + const Duration(hours: 1),
       );
 
       await service.claimAbandonmentForfeit(gameId: game.id, claimantUid: 'u2');
@@ -298,7 +299,7 @@ void main() {
       await backdateUpdatedAt(
         firestore,
         game.id,
-        ReversiaPvpGameService.abandonmentThreshold + const Duration(hours: 1),
+        ReversiaPvpGameService.abandonmentPolicy.threshold + const Duration(hours: 1),
       );
 
       // u1's own turn — they have nothing to claim.
@@ -320,7 +321,7 @@ void main() {
       await backdateUpdatedAt(
         firestore,
         game.id,
-        ReversiaPvpGameService.abandonmentThreshold + const Duration(hours: 1),
+        ReversiaPvpGameService.abandonmentPolicy.threshold + const Duration(hours: 1),
       );
       await service.resign(gameId: game.id, uid: 'u1');
 

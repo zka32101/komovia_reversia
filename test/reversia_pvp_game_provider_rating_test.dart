@@ -81,7 +81,7 @@ void main() {
       await firestore.collection('reversia_pvp_games').doc(game.id).update({
         'updatedAt': Timestamp.fromDate(
           DateTime.now().subtract(
-            ReversiaPvpGameService.abandonmentThreshold + const Duration(hours: 1),
+            ReversiaPvpGameService.abandonmentPolicy.threshold + const Duration(hours: 1),
           ),
         ),
       });

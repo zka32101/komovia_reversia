@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:komovia_core/komovia_core.dart';
 
 /// 2人のプレイヤー間の対局（マッチング成立後の実対局）のスナップショット。
 ///
@@ -24,7 +25,8 @@ class ReversiaPvpGame {
   final int movesCount;
   final String status; // 'active', 'finished'
   final String? winnerUid;
-  final String? result; // 'resignation', 'victory', 'draw', 'forfeit', null(進行中)
+  final String?
+      result; // 'resignation', 'victory', 'draw', 'forfeit', null(進行中)
   final String? matchId; // ReversiaMatchResult.idとの紐付け（あれば）
   final String? tournamentId;
   final String? tournamentMatchId;
@@ -66,17 +68,37 @@ class ReversiaPvpGame {
     return (color == 1) == isFirstTurn;
   }
 
-  /// [uid]が、相手が長期間応答していない（`updatedAt`からこの期間が
-  /// 経過している）ことを理由に放置勝ちを申請できるか。komovia_goの
-  /// `PvpGame.canClaimAbandonmentForfeit`と同じ役割 - 申請できるのは
-  /// 「待っている側」（手番がまだ来ていない側＝相手が応答していない側）
-  /// のみで、自分自身が応答していない側ではない。
-  bool canClaimAbandonmentForfeit(String uid, {required Duration threshold}) {
+  /// [uid]が、相手が応答していない（`updatedAt`から[policy]の閾値が
+  /// 経過している）ことを理由に放置勝ちを申請できるか。判定本体は
+  /// komovia_coreの共有型`AbandonmentForfeitPolicy`に委譲する - 申請
+  /// できるのは「待っている側」（手番がまだ来ていない側＝相手が応答して
+  /// いない側）のみで、自分自身が応答していない側ではない。
+  bool canClaimAbandonmentForfeit(
+    String uid, {
+    required AbandonmentForfeitPolicy policy,
+    DateTime? now,
+  }) {
     if (!isActive) return false;
     if (playerColorOf(uid) == 0) return false;
-    if (isTurnOf(uid)) return false;
-    final lastActivity = updatedAt ?? createdAt;
-    return DateTime.now().difference(lastActivity) >= threshold;
+    return policy.canClaim(
+      isClaimantsTurn: isTurnOf(uid),
+      lastActivityAt: updatedAt ?? createdAt,
+      now: now,
+    );
+  }
+
+  /// 待っている側の[uid]が放置勝ちを申請できるようになるまでの残り時間。
+  /// 進行中でない・非対局者・自分の手番のいずれかであれば（そもそも申請
+  /// 対象にならないので）null。
+  Duration? abandonmentForfeitRemaining(
+    String uid, {
+    required AbandonmentForfeitPolicy policy,
+    DateTime? now,
+  }) {
+    if (!isActive) return null;
+    if (playerColorOf(uid) == 0) return null;
+    if (isTurnOf(uid)) return null;
+    return policy.remaining(lastActivityAt: updatedAt ?? createdAt, now: now);
   }
 
   factory ReversiaPvpGame.fromFirestore(

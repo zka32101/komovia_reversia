@@ -81,7 +81,7 @@ class _GameCard extends ConsumerWidget {
     final myTurn = game.isTurnOf(uid);
     final canClaimForfeit = game.canClaimAbandonmentForfeit(
       uid,
-      threshold: ReversiaPvpGameService.abandonmentThreshold,
+      policy: ReversiaPvpGameService.abandonmentPolicy,
     );
 
     return Card(

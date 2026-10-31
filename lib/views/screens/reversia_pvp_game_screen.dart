@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:komovia_core/komovia_core.dart';
@@ -31,6 +33,26 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
   Square? _selected;
   List<Square> _hints = const [];
   String? _errorMessage;
+
+  /// 放置勝ちの閾値は15分と短く、待っている側は画面を開いたまま待つ
+  /// ことが多い。相手が無応答の間はFirestoreのストリームが何も流さない
+  /// ため、時間経過だけで申請ボタン・残り時間表示が切り替わるよう、
+  /// 定期的に再描画する。
+  Timer? _forfeitTicker;
+
+  @override
+  void initState() {
+    super.initState();
+    _forfeitTicker = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _forfeitTicker?.cancel();
+    super.dispose();
+  }
 
   /// [ReversiaPvpGame.movesRecord]を初期局面から打ち直して再構成する。
   /// `ReversiaPvpGameService._replay`と同じロジック（盤面をFirestoreへ
@@ -123,7 +145,8 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
     if (!mounted) return;
     if (!applied) {
       playReversiaIllegalMoveFeedback();
-      setState(() => _errorMessage = AppLocalizations.of(context)!.pvpGameIllegalMoveMessage);
+      setState(() => _errorMessage =
+          AppLocalizations.of(context)!.pvpGameIllegalMoveMessage);
     } else {
       setState(() => _errorMessage = null);
     }
@@ -175,7 +198,8 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
     await ref.read(claimReversiaAbandonmentForfeitProvider)(widget.gameId, uid);
   }
 
-  String _statusText(AppLocalizations l10n, ReversiaPvpGame pvp, Side? humanSide) {
+  String _statusText(
+      AppLocalizations l10n, ReversiaPvpGame pvp, Side? humanSide) {
     if (pvp.isFinished) {
       if (pvp.winnerUid == null) return l10n.pvpGameFinishedMessage;
       final uid = ref.read(currentUidProvider);
@@ -212,114 +236,134 @@ class _ReversiaPvpGameScreenState extends ConsumerState<ReversiaPvpGameScreen> {
           final (position, historyKeys) = _replay(pvp.movesRecord);
           final humanSide = _humanSide(pvp, uid);
 
+          final forfeitRemaining = pvp.abandonmentForfeitRemaining(
+            uid,
+            policy: ReversiaPvpGameService.abandonmentPolicy,
+          );
+
           return SafeArea(
             child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _statusText(l10n, pvp, humanSide),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  if (_errorMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        _errorMessage!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _statusText(l10n, pvp, humanSide),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    if (_errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
                         ),
                       ),
-                    ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final boardSize =
-                            constraints.maxWidth.clamp(0, 400).toDouble();
-                        return GestureDetector(
-                          key: const Key('reversia_pvp_board_gesture_detector'),
-                          onTapUp: (details) {
-                            final square = _renderer.squareAt(
-                              BoardOffset(
-                                details.localPosition.dx,
-                                details.localPosition.dy,
-                              ),
-                              BoardSize(boardSize, boardSize),
-                              position,
-                              // 後手視点では盤面を反転表示するので、タップ
-                              // 判定も同じ向きで逆変換する必要がある。
-                              flipped: humanSide == Side.second,
-                            );
-                            if (square != null) {
-                              _onTapSquare(
-                                square,
-                                pvp,
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final boardSize =
+                              constraints.maxWidth.clamp(0, 400).toDouble();
+                          return GestureDetector(
+                            key: const Key(
+                                'reversia_pvp_board_gesture_detector'),
+                            onTapUp: (details) {
+                              final square = _renderer.squareAt(
+                                BoardOffset(
+                                  details.localPosition.dx,
+                                  details.localPosition.dy,
+                                ),
+                                BoardSize(boardSize, boardSize),
                                 position,
-                                historyKeys,
-                                uid,
+                                // 後手視点では盤面を反転表示するので、タップ
+                                // 判定も同じ向きで逆変換する必要がある。
+                                flipped: humanSide == Side.second,
                               );
-                            }
-                          },
-                          child: SizedBox(
-                            width: boardSize,
-                            child: _renderer.build(
-                              position,
-                              hints: _hints,
-                              selected: _selected,
-                              // 両プレイヤーが常に自分の駒を手元（画面下側）
-                              // に見られるよう、後手は盤面を自動で反転する
-                              // - competitor Othello/Reversiアプリによく
-                              // ある「自分視点で見る」機能。観戦中
-                              // (humanSide == null)は反転しない。
-                              flipped: humanSide == Side.second,
+                              if (square != null) {
+                                _onTapSquare(
+                                  square,
+                                  pvp,
+                                  position,
+                                  historyKeys,
+                                  uid,
+                                );
+                              }
+                            },
+                            child: SizedBox(
+                              width: boardSize,
+                              child: _renderer.build(
+                                position,
+                                hints: _hints,
+                                selected: _selected,
+                                // 両プレイヤーが常に自分の駒を手元（画面下側）
+                                // に見られるよう、後手は盤面を自動で反転する
+                                // - competitor Othello/Reversiアプリによく
+                                // ある「自分視点で見る」機能。観戦中
+                                // (humanSide == null)は反転しない。
+                                flipped: humanSide == Side.second,
+                              ),
                             ),
+                          );
+                        },
+                      ),
+                    ),
+                    if (pvp.isActive && humanSide != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: OutlinedButton(
+                          onPressed: () => _confirmResign(uid),
+                          child: Text(l10n.pvpGameResignButton),
+                        ),
+                      ),
+                    if (pvp.isFinished && humanSide != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: OutlinedButton(
+                          onPressed: () => _openReview(pvp, humanSide),
+                          child: Text(l10n.reviewGameButton),
+                        ),
+                      ),
+                    if (forfeitRemaining != null &&
+                        forfeitRemaining > Duration.zero)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Text(
+                          l10n.pvpGameForfeitAvailableInMessage(
+                            // 端数は切り上げて「あと0分」と表示しない
+                            (forfeitRemaining.inSeconds / 60).ceil(),
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                  if (pvp.isActive && humanSide != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: OutlinedButton(
-                        onPressed: () => _confirmResign(uid),
-                        child: Text(l10n.pvpGameResignButton),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                       ),
-                    ),
-                  if (pvp.isFinished && humanSide != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: OutlinedButton(
-                        onPressed: () => _openReview(pvp, humanSide),
-                        child: Text(l10n.reviewGameButton),
-                      ),
-                    ),
-                  if (pvp.canClaimAbandonmentForfeit(
-                    uid,
-                    threshold: ReversiaPvpGameService.abandonmentThreshold,
-                  ))
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Column(
-                        children: [
-                          Text(
-                            l10n.pvpGamesListOpponentInactiveMessage,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
+                    if (pvp.canClaimAbandonmentForfeit(
+                      uid,
+                      policy: ReversiaPvpGameService.abandonmentPolicy,
+                    ))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Column(
+                          children: [
+                            Text(
+                              l10n.pvpGamesListOpponentInactiveMessage,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          FilledButton(
-                            onPressed: () => _confirmClaimForfeit(uid),
-                            child: Text(l10n.pvpGamesListClaimForfeitButton),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            FilledButton(
+                              onPressed: () => _confirmClaimForfeit(uid),
+                              child: Text(l10n.pvpGamesListClaimForfeitButton),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
