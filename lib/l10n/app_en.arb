@@ -421,5 +421,11 @@
   "cosmeticFreeLabel": "Free",
   "cosmeticSupporterLabel": "Supporter perk",
   "cosmeticLockedMessage": "This skin is a Premium Supporter perk",
-  "cosmeticBecomeSupporter": "Become a supporter"
+  "cosmeticBecomeSupporter": "Become a supporter",
+  "settingsAvatarFrameLabel": "Avatar frame",
+  "settingsChooseFrameTitle": "Choose a frame",
+  "settingsFrameNone": "No frame",
+  "frameRequirementGames": "Play {count} AI games",
+  "frameRequirementWins": "Win {count} AI games",
+  "frameRequirementStreak": "Win {count} AI games in a row"
 }
