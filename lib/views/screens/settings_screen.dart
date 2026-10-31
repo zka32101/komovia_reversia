@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:komovia_core/komovia_core.dart' show AvatarFrame;
 
 import '../../l10n/app_localizations.dart';
+import '../../models/reversia_game_stats.dart';
+import '../../services/avatar_frame_preferences.dart';
 import '../../services/avatar_preferences.dart';
+import '../../services/reversia_game_stats_service.dart';
 import '../../services/daily_reminder_preferences.dart';
 import '../../services/local_notification_service.dart';
 import '../../services/sound_feedback_preferences.dart';
 import '../../src/reversia_avatar.dart';
+import '../../src/reversia_avatar_frame.dart';
 import '../../utils/reversia_move_feedback.dart';
 import 'cosmetic_shop_screen.dart';
 import 'how_to_play_screen.dart';
@@ -29,17 +34,33 @@ class SettingsScreen extends StatefulWidget {
     DailyReminderPreferencesLike? preferences,
     SoundFeedbackPreferencesLike? soundFeedbackPreferences,
     AvatarPreferencesLike? avatarPreferences,
+    AvatarFramePreferencesLike? framePreferences,
+    Future<ReversiaGameStats> Function(String uid)? statsLoader,
   })  : notificationService = notificationService ?? const _DefaultNotificationService(),
         preferences = preferences ?? DailyReminderPreferences(),
         soundFeedbackPreferences =
             soundFeedbackPreferences ?? SoundFeedbackPreferences(),
-        avatarPreferences = avatarPreferences ?? AvatarPreferences();
+        avatarPreferences = avatarPreferences ?? AvatarPreferences(),
+        framePreferences = framePreferences ?? AvatarFramePreferences(),
+        statsLoader = statsLoader ?? _defaultStatsLoader;
+
+  /// フレームのアンロック判定に使う同期済みのAI対局記録を読む。
+  /// Firestoreが使えない環境（テスト等）では初期値扱いにする。
+  static Future<ReversiaGameStats> _defaultStatsLoader(String uid) async {
+    try {
+      return await ReversiaGameStatsService().getStats(uid);
+    } catch (_) {
+      return ReversiaGameStats.initial;
+    }
+  }
 
   final String? uid;
   final LocalNotificationServiceLike notificationService;
   final DailyReminderPreferencesLike preferences;
   final SoundFeedbackPreferencesLike soundFeedbackPreferences;
   final AvatarPreferencesLike avatarPreferences;
+  final AvatarFramePreferencesLike framePreferences;
+  final Future<ReversiaGameStats> Function(String uid) statsLoader;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -52,6 +73,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _loaded = false;
   bool _feedbackEnabled = true;
   ReversiaAvatar _avatar = ReversiaAvatar.defaultAvatar;
+  ReversiaGameStats _stats = ReversiaGameStats.initial;
+  String? _frameId;
 
   @override
   void initState() {
@@ -65,6 +88,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final minute = await widget.preferences.getMinute();
     final feedbackEnabled = await widget.soundFeedbackPreferences.isEnabled();
     final avatar = await widget.avatarPreferences.getAvatar();
+    final frameId = await widget.framePreferences.getFrameId();
+    final uid = widget.uid;
+    final stats = uid == null ? ReversiaGameStats.initial : await widget.statsLoader(uid);
     if (!mounted) return;
     setState(() {
       _reminderEnabled = enabled;
@@ -72,6 +98,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _reminderMinute = minute;
       _feedbackEnabled = feedbackEnabled;
       _avatar = avatar;
+      _frameId = frameId;
+      _stats = stats;
       _loaded = true;
     });
   }
@@ -96,6 +124,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (selected == null) return;
     await widget.avatarPreferences.setAvatar(selected);
     if (mounted) setState(() => _avatar = selected);
+  }
+
+  ReversiaAvatarFrame? get _selectedFrame =>
+      ReversiaAvatarFrame.resolveSelected(_frameId, _stats);
+
+  String _requirementText(AppLocalizations l10n, ReversiaAvatarFrame f) {
+    switch (f.kind) {
+      case FrameRequirementKind.gamesPlayed:
+        return l10n.frameRequirementGames(f.threshold);
+      case FrameRequirementKind.wins:
+        return l10n.frameRequirementWins(f.threshold);
+      case FrameRequirementKind.longestWinStreak:
+        return l10n.frameRequirementStreak(f.threshold);
+    }
+  }
+
+  Future<void> _pickFrame() async {
+    final l10n = AppLocalizations.of(context)!;
+    final unlocked = ReversiaAvatarFrame.unlockedIds(_stats);
+    const noneSentinel = '';
+    final current = _selectedFrame?.id ?? noneSentinel;
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(l10n.settingsChooseFrameTitle),
+        children: [
+          RadioListTile<String>(
+            title: Text(l10n.settingsFrameNone),
+            value: noneSentinel,
+            groupValue: current,
+            onChanged: (v) => Navigator.pop(ctx, v),
+          ),
+          for (final f in ReversiaAvatarFrame.all)
+            AvatarFrame.isUnlocked(f.id, unlocked)
+                ? RadioListTile<String>(
+                    key: ValueKey('frame-${f.id}'),
+                    secondary: FramedAvatar(emoji: _avatar.emoji, frame: f, size: 32),
+                    title: Text(f.frame.name),
+                    value: f.id,
+                    groupValue: current,
+                    onChanged: (v) => Navigator.pop(ctx, v),
+                  )
+                : ListTile(
+                    key: ValueKey('frame-${f.id}'),
+                    enabled: false,
+                    leading: const Icon(Icons.lock_outline),
+                    title: Text(f.frame.name),
+                    subtitle: Text(_requirementText(l10n, f)),
+                  ),
+        ],
+      ),
+    );
+    if (selected == null) return;
+    final frameId = selected == noneSentinel ? null : selected;
+    await widget.framePreferences.setFrameId(frameId);
+    if (mounted) setState(() => _frameId = frameId);
   }
 
   Future<void> _setFeedbackEnabled(bool value) async {
@@ -159,11 +243,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           if (_loaded)
             ListTile(
-              leading: Text(_avatar.emoji, style: const TextStyle(fontSize: 28)),
+              leading: FramedAvatar(emoji: _avatar.emoji, frame: _selectedFrame),
               title: Text(l10n.settingsAvatarLabel),
               subtitle: Text(_avatar.label),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: _pickAvatar,
+            ),
+          if (_loaded)
+            ListTile(
+              leading: const Icon(Icons.circle_outlined),
+              title: Text(l10n.settingsAvatarFrameLabel),
+              subtitle: Text(_selectedFrame?.frame.name ?? l10n.settingsFrameNone),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: _pickFrame,
             ),
           ListTile(
             leading: const Icon(Icons.palette_outlined),

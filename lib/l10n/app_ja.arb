@@ -421,5 +421,32 @@
   "cosmeticFreeLabel": "無料",
   "cosmeticSupporterLabel": "サポーター特典",
   "cosmeticLockedMessage": "このスキンはプレミアムサポーター特典です",
-  "cosmeticBecomeSupporter": "サポーターになる"
+  "cosmeticBecomeSupporter": "サポーターになる",
+  "settingsAvatarFrameLabel": "アバターフレーム",
+  "settingsChooseFrameTitle": "フレームを選ぶ",
+  "settingsFrameNone": "フレームなし",
+  "frameRequirementGames": "AI対局を{count}局プレイ",
+  "@frameRequirementGames": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "frameRequirementWins": "AI対局で{count}勝",
+  "@frameRequirementWins": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "frameRequirementStreak": "AI対局で{count}連勝",
+  "@frameRequirementStreak": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
