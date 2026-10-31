@@ -172,7 +172,20 @@ class _NewBoardThemePreferences implements BoardThemePreferencesLike {
   const _NewBoardThemePreferences();
 
   @override
-  Future<ReversiaBoardTheme> getTheme() => BoardThemePreferences().getTheme();
+  Future<ReversiaBoardTheme> getTheme({bool hasActiveSubscription = false}) =>
+      BoardThemePreferences().getTheme(hasActiveSubscription: hasActiveSubscription);
+
+  @override
+  Future<String> getBoardSkinId() => BoardThemePreferences().getBoardSkinId();
+
+  @override
+  Future<String> getDiscSkinId() => BoardThemePreferences().getDiscSkinId();
+
+  @override
+  Future<void> setBoardSkinId(String id) => BoardThemePreferences().setBoardSkinId(id);
+
+  @override
+  Future<void> setDiscSkinId(String id) => BoardThemePreferences().setDiscSkinId(id);
 
   @override
   Future<void> setTheme(ReversiaBoardTheme theme) =>
@@ -258,13 +271,18 @@ class _ReversiaGameScreenState extends ConsumerState<ReversiaGameScreen> {
     _historyKeys.add(_game.positionKey(_position));
     if (widget.resume) _loadSavedGame();
     _loadBoardTheme();
+    // サポーター権限はStreamで遅れて届く/期限切れで変わるため、変化の
+    // たびにサポーター向けスキンの適用可否を再評価する。
+    ref.listenManual(isPremiumProvider, (_, __) => _loadBoardTheme());
   }
 
   /// 保存済みの配色テーマ（あれば）を読み込んで反映する。無ければ既定の
   /// `ReversiaBoardTheme.classic`のまま（`ReversiaBoardRenderer()`の
   /// デフォルト値と同じ）。
   Future<void> _loadBoardTheme() async {
-    final theme = await widget.themePreferences.getTheme();
+    final theme = await widget.themePreferences.getTheme(
+      hasActiveSubscription: ref.read(isPremiumProvider),
+    );
     if (!mounted) return;
     setState(() => _renderer = ReversiaBoardRenderer(theme: theme));
   }

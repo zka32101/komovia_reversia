@@ -7,6 +7,7 @@ import '../../services/local_notification_service.dart';
 import '../../services/sound_feedback_preferences.dart';
 import '../../src/reversia_avatar.dart';
 import '../../utils/reversia_move_feedback.dart';
+import 'cosmetic_shop_screen.dart';
 import 'how_to_play_screen.dart';
 import 'legal_document_screen.dart';
 import 'paywall_screen.dart';
@@ -164,6 +165,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: _pickAvatar,
             ),
+          ListTile(
+            leading: const Icon(Icons.palette_outlined),
+            title: Text(l10n.cosmeticShopTitle),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => CosmeticShopScreen(uid: widget.uid)),
+            ),
+          ),
           if (widget.uid != null)
             ListTile(
               leading: const Icon(Icons.workspace_premium_outlined),
