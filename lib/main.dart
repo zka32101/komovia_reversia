@@ -67,7 +67,7 @@ class KomoviaReversiaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Komovia Reversia',
+      title: 'リバーシア',
       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal)),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,

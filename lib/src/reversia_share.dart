@@ -23,7 +23,7 @@ String buildReversiaResultShareText(
 
   return buildShareCaption(
     ShareableMoment(
-      appName: 'Komovia Reversia',
+      appName: 'リバーシア',
       headline: headline,
       statLines: ['手数: $moveCount手'],
       hashtag: '#KomoviaReversia',
