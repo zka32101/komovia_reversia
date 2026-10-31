@@ -202,7 +202,7 @@ void main() {
     await firestore.collection('reversia_pvp_games').doc(gameId).update({
       'updatedAt': Timestamp.fromDate(
         DateTime.now().subtract(
-          ReversiaPvpGameService.abandonmentThreshold + const Duration(hours: 1),
+          ReversiaPvpGameService.abandonmentPolicy.threshold + const Duration(hours: 1),
         ),
       ),
     });
@@ -221,6 +221,19 @@ void main() {
     await pumpScreen(tester, gameId: gameId, service: service, uid: 'second-uid');
 
     expect(find.text('放置勝ちを申請する'), findsNothing);
+    // 閾値は分単位なので、待っている側には分単位のカウントダウンが出る
+    expect(find.textContaining('あと15分で放置勝ちを申請できます'), findsOneWidget);
+  });
+
+  testWidgets('shows no forfeit countdown to the player whose turn it is',
+      (tester) async {
+    final service = ReversiaPvpGameService(FakeFirebaseFirestore());
+    final gameId = await seedGame(service);
+
+    await pumpScreen(tester, gameId: gameId, service: service, uid: 'first-uid');
+
+    expect(find.textContaining('放置勝ちを申請できます'), findsNothing);
+    expect(find.text('放置勝ちを申請する'), findsNothing);
   });
 
   testWidgets('claiming forfeit ends the game as a win for the claimant',
@@ -231,12 +244,15 @@ void main() {
     await firestore.collection('reversia_pvp_games').doc(gameId).update({
       'updatedAt': Timestamp.fromDate(
         DateTime.now().subtract(
-          ReversiaPvpGameService.abandonmentThreshold + const Duration(hours: 1),
+          ReversiaPvpGameService.abandonmentPolicy.threshold + const Duration(hours: 1),
         ),
       ),
     });
 
     await pumpScreen(tester, gameId: gameId, service: service, uid: 'second-uid');
+    // 盤面の下にあるため、小さい画面ではスクロールして表示する
+    await tester.ensureVisible(find.text('放置勝ちを申請する'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('放置勝ちを申請する'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('申請する'));

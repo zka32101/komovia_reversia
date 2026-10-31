@@ -122,8 +122,11 @@ class ReversiaPvpGameService {
 
   /// [movesRecord]から現局面・局面履歴（千日手判定用）・着手リストを
   /// 初期局面から打ち直して再構成する。
-  ({ReversiaPosition position, List<Object> historyKeys, List<RecordedMove> moves})
-      _replay(String movesRecord) {
+  ({
+    ReversiaPosition position,
+    List<Object> historyKeys,
+    List<RecordedMove> moves
+  }) _replay(String movesRecord) {
     var position = _game.initialPosition();
     final historyKeys = <Object>[_game.positionKey(position)];
     final moves = <RecordedMove>[];
@@ -166,7 +169,10 @@ class ReversiaPvpGameService {
         move,
         historyKeys: replay.historyKeys,
       );
-      final newHistoryKeys = [...replay.historyKeys, _game.positionKey(newPosition)];
+      final newHistoryKeys = [
+        ...replay.historyKeys,
+        _game.positionKey(newPosition)
+      ];
       final newMoveNumber = replay.moves.length + 1;
       final newMoves = [
         ...replay.moves,
@@ -202,12 +208,19 @@ class ReversiaPvpGameService {
     });
   }
 
-  /// 相手が長期間応答していない（`updatedAt`からこの期間が経過している）
-  /// 対局を、放置勝ちとして終局させる。komovia_goの`PvpGameService.
-  /// claimAbandonmentForfeit`と同じ役割・同じ閾値 - 「NO TIMERS」方針
-  /// （対局中に時間制限を課さない）とは別物で、何日も現実に動きが無い
-  /// 対局を永久に「進行中」で残さないための救済措置。
-  static const Duration abandonmentThreshold = Duration(hours: 48);
+  /// 相手が応答していない（`updatedAt`からこの期間が経過している）
+  /// 対局を、放置勝ちとして終局させるためのポリシー。komovia_go/chess
+  /// は`AbandonmentForfeitPolicy.slow`（48時間）を使うが、リバーシアは
+  /// 6x6盤・1局数分で終わる早指し形式であり、48時間では「負けそうに
+  /// なった相手が回線を切って放置し、負けを付けさせない」という早指し
+  /// 対局特有の不満（オセロクエスト等のレビューで目立つパターン）に何の
+  /// 対処にもならない。そこで15分とする - 1局全体が数分で終わる形式で、
+  /// 1手に15分無応答なら事実上の離脱とみなしてよく、一方でアプリを一時
+  /// 的に閉じた（電話・通知対応など）程度で負けにされない程度の猶予は残す。
+  /// 「NO TIMERS」方針（1手ごとの持ち時間で急かさない）とは別物で、
+  /// 対局を永久に「進行中」で残さないための救済措置である点は変わらない。
+  static const AbandonmentForfeitPolicy abandonmentPolicy =
+      AbandonmentForfeitPolicy(threshold: Duration(minutes: 15));
 
   /// トランザクション内で読み取り・判定・書き込みを行うため、
   /// applyMove/resignと同時に呼ばれても後勝ちで結果が上書きされない。
@@ -223,7 +236,7 @@ class ReversiaPvpGameService {
       final pvp = ReversiaPvpGame.fromFirestore(snapshot);
       if (!pvp.canClaimAbandonmentForfeit(
         claimantUid,
-        threshold: abandonmentThreshold,
+        policy: abandonmentPolicy,
       )) {
         return;
       }
