@@ -12,6 +12,8 @@ import '../../services/sound_feedback_preferences.dart';
 import '../../src/reversia_avatar.dart';
 import '../../src/reversia_avatar_frame.dart';
 import '../../utils/reversia_move_feedback.dart';
+import '../../services/auth_service.dart';
+import 'account_screen.dart';
 import 'cosmetic_shop_screen.dart';
 import 'how_to_play_screen.dart';
 import 'legal_document_screen.dart';
@@ -36,7 +38,9 @@ class SettingsScreen extends StatefulWidget {
     AvatarPreferencesLike? avatarPreferences,
     AvatarFramePreferencesLike? framePreferences,
     Future<ReversiaGameStats> Function(String uid)? statsLoader,
-  })  : notificationService = notificationService ?? const _DefaultNotificationService(),
+    this.authService,
+  })  : notificationService =
+            notificationService ?? const _DefaultNotificationService(),
         preferences = preferences ?? DailyReminderPreferences(),
         soundFeedbackPreferences =
             soundFeedbackPreferences ?? SoundFeedbackPreferences(),
@@ -61,6 +65,9 @@ class SettingsScreen extends StatefulWidget {
   final AvatarPreferencesLike avatarPreferences;
   final AvatarFramePreferencesLike framePreferences;
   final Future<ReversiaGameStats> Function(String uid) statsLoader;
+
+  /// アカウント連携画面に渡すAuthService（テスト用に差し替え可能）。
+  final AuthService? authService;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -90,7 +97,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final avatar = await widget.avatarPreferences.getAvatar();
     final frameId = await widget.framePreferences.getFrameId();
     final uid = widget.uid;
-    final stats = uid == null ? ReversiaGameStats.initial : await widget.statsLoader(uid);
+    final stats =
+        uid == null ? ReversiaGameStats.initial : await widget.statsLoader(uid);
     if (!mounted) return;
     setState(() {
       _reminderEnabled = enabled;
@@ -160,7 +168,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             AvatarFrame.isUnlocked(f.id, unlocked)
                 ? RadioListTile<String>(
                     key: ValueKey('frame-${f.id}'),
-                    secondary: FramedAvatar(emoji: _avatar.emoji, frame: f, size: 32),
+                    secondary:
+                        FramedAvatar(emoji: _avatar.emoji, frame: f, size: 32),
                     title: Text(f.frame.name),
                     value: f.id,
                     groupValue: current,
@@ -197,7 +206,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!granted) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.settingsNotificationPermissionRequiredMessage)),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!
+                  .settingsNotificationPermissionRequiredMessage)),
         );
         return;
       }
@@ -243,7 +254,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           if (_loaded)
             ListTile(
-              leading: FramedAvatar(emoji: _avatar.emoji, frame: _selectedFrame),
+              leading:
+                  FramedAvatar(emoji: _avatar.emoji, frame: _selectedFrame),
               title: Text(l10n.settingsAvatarLabel),
               subtitle: Text(_avatar.label),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -253,7 +265,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ListTile(
               leading: const Icon(Icons.circle_outlined),
               title: Text(l10n.settingsAvatarFrameLabel),
-              subtitle: Text(_selectedFrame?.frame.name ?? l10n.settingsFrameNone),
+              subtitle:
+                  Text(_selectedFrame?.frame.name ?? l10n.settingsFrameNone),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: _pickFrame,
             ),
@@ -263,7 +276,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => CosmeticShopScreen(uid: widget.uid)),
+              MaterialPageRoute(
+                  builder: (_) => CosmeticShopScreen(uid: widget.uid)),
             ),
           ),
           if (widget.uid != null)
@@ -273,7 +287,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => PaywallScreen(uid: widget.uid!)),
+                MaterialPageRoute(
+                    builder: (_) => PaywallScreen(uid: widget.uid!)),
               ),
             ),
           if (_loaded) ...[
@@ -299,11 +314,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
             SwitchListTile(
               secondary: const Icon(Icons.volume_up_outlined),
               title: Text(l10n.settingsMoveFeedbackLabel),
-              subtitle: Text(_feedbackEnabled ? l10n.settingsOnLabel : l10n.settingsOffLabel),
+              subtitle: Text(_feedbackEnabled
+                  ? l10n.settingsOnLabel
+                  : l10n.settingsOffLabel),
               value: _feedbackEnabled,
               onChanged: _setFeedbackEnabled,
             ),
           ],
+          ListTile(
+            leading: const Icon(Icons.manage_accounts_outlined),
+            title: Text(l10n.accountLinkEntryTitle),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AccountScreen(authService: widget.authService),
+              ),
+            ),
+          ),
           ListTile(
             leading: const Icon(Icons.help_outline),
             title: Text(l10n.howToPlayTitle),
@@ -359,12 +387,16 @@ class _DefaultNotificationService implements LocalNotificationServiceLike {
   const _DefaultNotificationService();
 
   @override
-  Future<bool> requestPermission() => LocalNotificationService().requestPermission();
+  Future<bool> requestPermission() =>
+      LocalNotificationService().requestPermission();
 
   @override
-  Future<void> scheduleDailyReminder({required int hour, required int minute}) =>
-      LocalNotificationService().scheduleDailyReminder(hour: hour, minute: minute);
+  Future<void> scheduleDailyReminder(
+          {required int hour, required int minute}) =>
+      LocalNotificationService()
+          .scheduleDailyReminder(hour: hour, minute: minute);
 
   @override
-  Future<void> cancelDailyReminder() => LocalNotificationService().cancelDailyReminder();
+  Future<void> cancelDailyReminder() =>
+      LocalNotificationService().cancelDailyReminder();
 }
