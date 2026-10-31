@@ -414,5 +414,12 @@
   "pvpGameSpectatingStatus": "観戦中",
   "pvpGameTitle": "対局",
   "pvpGameLoginRequiredMessage": "ログインが必要です",
-  "pvpGameResignButton": "投了する"
+  "pvpGameResignButton": "投了する",
+  "cosmeticShopTitle": "Customize",
+  "cosmeticBoardSkinsHeader": "Board skins",
+  "cosmeticDiscSkinsHeader": "Disc skins",
+  "cosmeticFreeLabel": "Free",
+  "cosmeticSupporterLabel": "Supporter perk",
+  "cosmeticLockedMessage": "This skin is a Premium Supporter perk",
+  "cosmeticBecomeSupporter": "Become a supporter"
 }

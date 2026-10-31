@@ -67,6 +67,15 @@ class ReversiaBoardPainter extends CustomPainter {
           rect,
           Paint()..color = isDark ? theme.darkSquare : theme.lightSquare,
         );
+        if (theme.gridLineColor != null) {
+          canvas.drawRect(
+            rect,
+            Paint()
+              ..color = theme.gridLineColor!
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = cell * 0.03,
+          );
+        }
 
         if (square == lastFrom || square == lastTo) {
           canvas.drawRect(rect, Paint()..color = theme.lastMoveColor);
@@ -111,6 +120,14 @@ class ReversiaBoardPainter extends CustomPainter {
       radius,
       Paint()..color = color,
     );
+
+    if (theme.discGloss) {
+      canvas.drawCircle(
+        center.translate(-radius * 0.3, -cellRect.height * 0.03 - radius * 0.3),
+        radius * 0.35,
+        Paint()..color = Colors.white.withValues(alpha: 0.45),
+      );
+    }
 
     if (piece.owner == position.sideToMove) {
       canvas.drawCircle(

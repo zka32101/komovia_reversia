@@ -19,6 +19,14 @@ class ReversiaBoardTheme {
   final Color selectedBorderColor;
   final Color hintColor;
 
+  /// 盤のマス目の境界線色（nullなら線を引かない - 既存3テーマは元々
+  /// 線を引いていないため、既存の見た目はそのまま）。コスメティックの
+  /// 盤スキン（`reversia_cosmetics.dart`）のうちネオン等が使う。
+  final Color? gridLineColor;
+
+  /// trueなら駒にハイライト（光沢）を描く - ガラス風の駒スキン用。
+  final bool discGloss;
+
   const ReversiaBoardTheme({
     required this.id,
     required this.label,
@@ -30,6 +38,8 @@ class ReversiaBoardTheme {
     required this.lastMoveColor,
     required this.selectedBorderColor,
     required this.hintColor,
+    this.gridLineColor,
+    this.discGloss = false,
   });
 
   static const classic = ReversiaBoardTheme(
