@@ -8,6 +8,19 @@ import 'package:komovia_core/komovia_core.dart';
 import '../services/premium_entitlement_service.dart';
 import 'auth_provider.dart';
 
+SubscriptionPlan? _planForProduct(String productId) {
+  for (final p in SubscriptionPlan.values) {
+    if (p.productId == productId) return p;
+  }
+  return null;
+}
+
+/// `PurchaseDetails.transactionDate`（エポックミリ秒の文字列）を解析する。
+DateTime? purchaseDateOf(PurchaseDetails purchase) {
+  final ms = int.tryParse(purchase.transactionDate ?? '');
+  return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+}
+
 final purchaseServiceProvider = Provider<PurchaseService>((ref) => PurchaseService());
 
 final premiumEntitlementServiceProvider =
@@ -71,11 +84,19 @@ final purchaseRecoveryProvider = Provider<void>((ref) {
           final uid = ref.read(currentUidProvider);
           if (uid == null) break;
           try {
-            await entitlementService.grantEntitlement(
-              uid: uid,
-              plan: plan,
-              skipIfAlreadyActive: true,
-            );
+            if (purchase.status == PurchaseStatus.restored) {
+              await entitlementService.restoreEntitlement(
+                uid: uid,
+                plan: plan,
+                originalPurchaseDate: purchaseDateOf(purchase),
+              );
+            } else {
+              await entitlementService.grantEntitlement(
+                uid: uid,
+                plan: plan,
+                skipIfAlreadyActive: true,
+              );
+            }
             await purchaseService.completePurchase(purchase);
           } catch (e) {
             // completePurchaseを呼ばない - ストアに再配信させ、次回この
@@ -159,5 +180,66 @@ final purchaseSubscriptionProvider =
     } finally {
       await subscription.cancel();
     }
+  };
+});
+
+/// 「購入を復元」- ストアに過去の購入を再配信させ、`restored`として
+/// 届いたものを**現在の**uidの権限として再登録する（GoEnの
+/// `restorePurchasesProvider`相当だが、reversiaではアプリルートの
+/// リスナー任せにせずここで直接書き込み、結果を確実に判定する）。
+/// 復元後に有効な権限があればtrue、復元対象が無ければfalseを返す。
+/// ストア自体が使えない場合は[PurchaseUnavailableException]。
+final restorePurchasesProvider =
+    Provider<Future<bool> Function(String uid)>((ref) {
+  final purchaseService = ref.watch(purchaseServiceProvider);
+  final entitlementService = ref.watch(premiumEntitlementServiceProvider);
+
+  return (uid) async {
+    final available = await purchaseService.isAvailable();
+    if (!available) {
+      throw PurchaseUnavailableException('この端末では購入機能を利用できません。');
+    }
+
+    final pending = <Future<void>>[];
+    final settled = Completer<void>();
+    Timer? quietTimer;
+    void armQuietTimer(Duration d) {
+      quietTimer?.cancel();
+      quietTimer = Timer(d, () {
+        if (!settled.isCompleted) settled.complete();
+      });
+    }
+
+    final subscription = purchaseService.purchaseStream.listen((purchases) {
+      for (final purchase in purchases) {
+        if (purchase.status != PurchaseStatus.restored) continue;
+        final plan = _planForProduct(purchase.productID);
+        if (plan == null) continue;
+        pending.add(() async {
+          await entitlementService.restoreEntitlement(
+            uid: uid,
+            plan: plan,
+            originalPurchaseDate: purchaseDateOf(purchase),
+          );
+          await purchaseService.completePurchase(purchase);
+        }());
+      }
+      // 最後の配信から少し待って打ち切る（ストアは「復元対象なし」を
+      // 明示的に通知しないため）。
+      armQuietTimer(const Duration(seconds: 2));
+    });
+
+    try {
+      await purchaseService.restorePurchases();
+      armQuietTimer(const Duration(seconds: 4));
+      await settled.future;
+      await Future.wait(pending);
+    } finally {
+      quietTimer?.cancel();
+      await subscription.cancel();
+    }
+
+    final entitlement = await entitlementService.getEntitlement(uid);
+    return entitlement?.isCurrentlyActive() ?? false;
   };
 });

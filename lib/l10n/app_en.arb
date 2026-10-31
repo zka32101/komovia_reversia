@@ -433,5 +433,9 @@
   "settingsFrameNone": "No frame",
   "frameRequirementGames": "Play {count} AI games",
   "frameRequirementWins": "Win {count} AI games",
-  "frameRequirementStreak": "Win {count} AI games in a row"
+  "frameRequirementStreak": "Win {count} AI games in a row",
+  "paywallRestoreButton": "Restore Purchases",
+  "paywallRestoreSuccessMessage": "Your purchase has been restored. Thank you for your support!",
+  "paywallRestoreNoneFoundMessage": "No purchases to restore were found",
+  "paywallRestoreFailedMessage": "Failed to restore purchases: {error}"
 }

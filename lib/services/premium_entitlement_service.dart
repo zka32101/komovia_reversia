@@ -84,6 +84,7 @@ class PremiumEntitlementService {
     required String uid,
     required SubscriptionPlan plan,
     bool skipIfAlreadyActive = false,
+    DateTime? startedAt,
   }) async {
     final now = DateTime.now();
     if (skipIfAlreadyActive) {
@@ -91,15 +92,47 @@ class PremiumEntitlementService {
       if (existing != null && existing.isCurrentlyActive(now: now)) return;
     }
 
+    final start = startedAt ?? now;
     final entitlement = Entitlement(
       isActive: true,
       plan: plan,
-      startedAt: now,
+      startedAt: start,
       expiresAt: plan.entitlementLength == null
           ? null
-          : now.add(plan.entitlementLength!),
+          : start.add(plan.entitlementLength!),
     );
     await _docOf(uid).set(_toFirestore(entitlement));
+  }
+
+  /// ストアから復元された購入（`PurchaseStatus.restored`）を、**現在の**
+  /// uidへ再び紐付ける。匿名認証のため再インストール/機種変更でuidが
+  /// 変わると、以前のuidに保存された権限は見えなくなる - App Store審査
+  /// ガイドライン3.1.1が求める「購入の復元」の実体はこの再紐付け。
+  ///
+  /// [originalPurchaseDate]が分かる場合はそこを起点に期限を計算し、
+  /// 既に期限切れの月額/年額は復元しない（復元のたびに期限が「今から」
+  /// 延長されてしまう抜け道を防ぐ）。買い切りは常に復元する。
+  /// 権限を付与した（または既に有効だった）場合はtrueを返す。
+  Future<bool> restoreEntitlement({
+    required String uid,
+    required SubscriptionPlan plan,
+    DateTime? originalPurchaseDate,
+  }) async {
+    final now = DateTime.now();
+    final length = plan.entitlementLength;
+    if (length != null &&
+        originalPurchaseDate != null &&
+        !originalPurchaseDate.add(length).isAfter(now)) {
+      return false;
+    }
+    final existing = await getEntitlement(uid);
+    if (existing != null && existing.isCurrentlyActive(now: now)) return true;
+    await grantEntitlement(
+      uid: uid,
+      plan: plan,
+      startedAt: length == null ? now : originalPurchaseDate,
+    );
+    return true;
   }
 }
 
@@ -131,7 +164,9 @@ class PurchaseService {
     lifetimeProductId,
   };
 
-  final InAppPurchase _iap = InAppPurchase.instance;
+  // lateで遅延初期化 - プラットフォームチャンネルの無い環境（テスト）
+  // でこのクラスを生成/継承しただけで例外にならないようにする。
+  late final InAppPurchase _iap = InAppPurchase.instance;
 
   Stream<List<PurchaseDetails>> get purchaseStream => _iap.purchaseStream;
 
@@ -160,6 +195,11 @@ class PurchaseService {
     final param = PurchaseParam(productDetails: product);
     return _iap.buyNonConsumable(purchaseParam: param);
   }
+
+  /// 過去の購入をストアから再配信させる（App Store審査ガイドライン
+  /// 3.1.1対応）。結果は[purchaseStream]に`PurchaseStatus.restored`として
+  /// 非同期に届く。
+  Future<void> restorePurchases() => _iap.restorePurchases();
 
   /// トランザクションをプラットフォームに確認応答する。成功後は必須
   /// （呼ばないとストアが未完了扱いにし、最終的に自動返金される）。

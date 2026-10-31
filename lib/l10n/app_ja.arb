@@ -454,5 +454,16 @@
         "type": "int"
       }
     }
+  },
+  "paywallRestoreButton": "購入を復元",
+  "paywallRestoreSuccessMessage": "購入を復元しました。ご支援ありがとうございます！",
+  "paywallRestoreNoneFoundMessage": "復元できる購入が見つかりませんでした",
+  "paywallRestoreFailedMessage": "購入の復元に失敗しました: {error}",
+  "@paywallRestoreFailedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }
