@@ -71,7 +71,7 @@ class LocalNotificationService {
     final next = _nextInstanceOf(hour, minute);
     await _plugin.zonedSchedule(
       _dailyReminderId,
-      'Komovia Reversia',
+      'リバーシア',
       '今日の1局はまだです。挑戦しましょう！',
       next,
       const NotificationDetails(
