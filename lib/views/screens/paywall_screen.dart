@@ -12,13 +12,42 @@ import '../../viewmodels/index.dart';
 /// ため、「開発者を応援する」という位置づけで案内する（存在しない機能
 /// を宣伝しない）。購入すると、ホーム画面にサポーターバッジが表示
 /// される。
-class PaywallScreen extends ConsumerWidget {
+class PaywallScreen extends ConsumerStatefulWidget {
   const PaywallScreen({super.key, required this.uid});
 
   final String uid;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PaywallScreen> createState() => _PaywallScreenState();
+}
+
+class _PaywallScreenState extends ConsumerState<PaywallScreen> {
+  bool _isRestoring = false;
+
+  String get uid => widget.uid;
+
+  Future<void> _restore() async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _isRestoring = true);
+    try {
+      final restored = await ref.read(restorePurchasesProvider)(uid);
+      messenger.showSnackBar(SnackBar(
+        content: Text(restored
+            ? l10n.paywallRestoreSuccessMessage
+            : l10n.paywallRestoreNoneFoundMessage),
+      ));
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.paywallRestoreFailedMessage('$e'))),
+      );
+    } finally {
+      if (mounted) setState(() => _isRestoring = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final entitlement = ref.watch(premiumEntitlementProvider(uid)).value;
     final isPremium = entitlement?.isCurrentlyActive() ?? false;
@@ -63,6 +92,23 @@ class PaywallScreen extends ConsumerWidget {
                     .map((plan) => _PlanCard(uid: uid, plan: plan))
                     .toList(),
               ),
+            const SizedBox(height: 12),
+            // App Store審査ガイドライン3.1.1: 非消耗型（買い切り）を販売する
+            // 場合、購入の復元手段が必須。サポーター状態に関わらず常に表示。
+            Center(
+              child: TextButton.icon(
+                key: const Key('restorePurchasesButton'),
+                onPressed: _isRestoring ? null : _restore,
+                icon: _isRestoring
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.restore),
+                label: Text(l10n.paywallRestoreButton),
+              ),
+            ),
           ],
         ),
       ),
